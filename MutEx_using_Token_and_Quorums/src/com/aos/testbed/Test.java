@@ -12,9 +12,11 @@ public class Test
 	{		
 		PriorityBlockingQueue<QueueObject> sharedQueue = new PriorityBlockingQueue<QueueObject>();
 		
+		int[] quorum = new int[7]; 
+		
 		System.out.println("Initiating Sequence");
-		TestServer ts = new TestServer(sharedQueue);
-		TestClient tc = new TestClient(sharedQueue);
+		TestServer ts = new TestServer(sharedQueue,quorum);
+		TestClient tc = new TestClient(sharedQueue, quorum);
 		
 		ts.start();
 	

@@ -12,9 +12,11 @@ public class TestServer implements Runnable
 {
 	private Thread t;
 	private PriorityBlockingQueue<QueueObject> queue;
+	private int[] quorum;
 	
-	public TestServer(PriorityBlockingQueue<QueueObject> queue) {
+	public TestServer(PriorityBlockingQueue<QueueObject> queue, int[] quorum) {
 		this.queue = queue;		
+		this.quorum = quorum;
 	}
 	
 	@Override
@@ -23,7 +25,7 @@ public class TestServer implements Runnable
 		try
 		{
 			LocateRegistry.createRegistry(5000);
-			MessagePassing stub = new MessagePassingRemote(queue);
+			MessagePassing stub = new MessagePassingRemote(queue,quorum);
 			Naming.rebind("rmi://localhost:5000/mutex",stub);
 		}
 		catch(Exception ex)

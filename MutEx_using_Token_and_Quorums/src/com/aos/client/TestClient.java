@@ -10,9 +10,11 @@ public class TestClient implements Runnable
 {
 	Thread t;
 	private PriorityBlockingQueue<QueueObject> queue;
+	private int[] quorum;
 	
-	public TestClient(PriorityBlockingQueue<QueueObject> queue) {
+	public TestClient(PriorityBlockingQueue<QueueObject> queue,int[] quorum) {
 		this.queue = queue;		
+		this.quorum = quorum;
 	}
 	
 	@Override
