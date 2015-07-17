@@ -1,3 +1,4 @@
+package com.aos.testbed;
 import com.aos.client.TestClient;
 import com.aos.server.TestServer;
 
