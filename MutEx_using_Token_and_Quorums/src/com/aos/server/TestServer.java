@@ -1,5 +1,8 @@
+package com.aos.server;
 import java.rmi.Naming;
 import java.rmi.registry.LocateRegistry;
+
+import com.aos.common.MessagePassing;
 
 public class TestServer implements Runnable
 {

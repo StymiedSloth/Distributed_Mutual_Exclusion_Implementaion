@@ -1,4 +1,7 @@
+package com.aos.client;
 import java.rmi.Naming;
+
+import com.aos.common.MessagePassing;
 
 
 public class TestClient implements Runnable
