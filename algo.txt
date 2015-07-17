@@ -1,0 +1,72 @@
+
+//
+// Sender will send request with 
+// sender's nodenumber and timestamp
+//
+Procedure sendRequest(timestamp,sender)
+begin
+	timeStamp = timeStamp + 1
+	Add tokenRequest into the requestQueue
+
+	qourumMember[] = GetQuorumMembers(sender)
+	
+	for every qourumMember
+		send request message RequestToken(timeStamp,nodeNumber)
+end
+
+//
+// This method is called when node receives RequestToken Message
+//
+
+Procedure recieveRequest(timestamp,sender)
+begin
+	Add sender's tokenRequest into the recipient's requestQueue
+
+	If(Recipient has Token and criticalSection = false)
+		tokenRequestor = read from requestQueue
+		sendToken(tokenRequestor)
+	End
+			
+	If(Recipient dont have Token) then
+		qourumMember[] = GetQuorumMembers(sender)
+	
+		for every qorumMember
+		begin
+			AskToken() to qourum member 
+		end
+	end
+end
+
+Procedure releaseCriticalSection
+begin	
+	qourumMember[] = GetQuorumMembers(sender)
+	
+	for every qorumMember
+	begin
+		Send release message
+	end
+
+	Dequeue Its own request from requestQueue
+end
+
+Procedure receiveReleaseMessage(sender,timestamp)
+begin
+	timestamp = max(sender's timestamp,timestamp)
+	
+	Dequeue sender from requestQueue	
+
+	AskToken() to sender
+end
+
+Procedure recieveToken
+begin
+	If requestQueue is not null
+	begin
+		tokenHolder = Read Node from requestQueue
+		
+		If token holder = me then
+			enter Critcal Section
+		Else
+			send Token to tokenHolder 
+	end	
+end
