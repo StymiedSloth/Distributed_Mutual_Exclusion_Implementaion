@@ -217,6 +217,8 @@ public class MessagePassingRemote extends UnicastRemoteObject implements Message
 				try 
 				{
 					stub = (MessagePassing) Naming.lookup("rmi://net"+String.format("%02d",QuorumMember)+".utdallas.edu:5000/mutex");
+					//TODO Discuss with team if the below needs to be a Queue.peek() since a node can make multiple requests,
+					//the first item in it's queue would be the first request which has been handled
 					stub.receiveReleaseMessage(timestamp, myNodeID);
 				} 
 				catch (MalformedURLException e) 
