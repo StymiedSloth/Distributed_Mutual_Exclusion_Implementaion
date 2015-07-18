@@ -28,7 +28,6 @@ public class MessagePassingRemote extends UnicastRemoteObject implements Message
 	MessagePassingRemote(int myNodeID,PriorityBlockingQueue<QueueObject> queue, int[] quorum, Boolean token) throws RemoteException 
 	{
 		super();
-		//TODO intialize myNodeId
 		this.myNodeID = myNodeID;
 		this.queue = queue;
 		this.quorum  = quorum;
@@ -52,6 +51,7 @@ public class MessagePassingRemote extends UnicastRemoteObject implements Message
 		
 		if(token && !criticalSection)
 		{
+			
 			 QueueObject queueObject = queue.peek();
 			 
 			 int TokenRequestor = queueObject.getSender();
@@ -59,13 +59,14 @@ public class MessagePassingRemote extends UnicastRemoteObject implements Message
 			 MessagePassing stub;
 			try 
 			{
+				//TODO DIsucss with team - This might be an issue, since any asker will get the token, we 
+				//have to dequeue the first request from queue and only then send it out. 
 				stub = (MessagePassing) Naming.lookup("rmi://net"+String.format("%02d",sender)+".utdallas.edu:5000/mutex");
 				stub.receiveToken(myNodeID);
 				token = false;
 			}
 			catch (MalformedURLException | NotBoundException e)
 			{
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
@@ -75,7 +76,6 @@ public class MessagePassingRemote extends UnicastRemoteObject implements Message
 			{
 				if(QuorumMember != myNodeID && QuorumMember != sender)
 				{
-					//TODO implement request token function
 					MessagePassing stub;
 					try 
 					{
@@ -84,12 +84,10 @@ public class MessagePassingRemote extends UnicastRemoteObject implements Message
 					} 
 					catch (MalformedURLException e) 
 					{
-						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
 					catch (NotBoundException e) 
 					{
-						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
 				}
@@ -100,7 +98,6 @@ public class MessagePassingRemote extends UnicastRemoteObject implements Message
 	@Override
 	public void askToken(int timestamp, int sender) throws RemoteException
 	{
-		// TODO Auto-generated method stub
 		System.out.println("Ask Token Recieved to " + myNodeID + " from " + sender);
 		
 		if(token && !criticalSection)
@@ -114,7 +111,6 @@ public class MessagePassingRemote extends UnicastRemoteObject implements Message
 			}
 			catch (MalformedURLException | NotBoundException e)
 			{
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 			
@@ -147,7 +143,6 @@ public class MessagePassingRemote extends UnicastRemoteObject implements Message
 			}
 			catch (MalformedURLException | NotBoundException e)
 			{
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
@@ -175,7 +170,6 @@ public class MessagePassingRemote extends UnicastRemoteObject implements Message
 			}
 			catch (MalformedURLException | NotBoundException e)
 			{
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
@@ -196,12 +190,10 @@ public class MessagePassingRemote extends UnicastRemoteObject implements Message
 				} 
 				catch (MalformedURLException e) 
 				{
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 				catch (NotBoundException e) 
 				{
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 			}
