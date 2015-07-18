@@ -17,17 +17,20 @@ public class MessagePassingRemote extends UnicastRemoteObject implements Message
 	 */
 	private static final long serialVersionUID = 1L;
 	private PriorityBlockingQueue<QueueObject> queue;
-	private int myNodeId;
+	private int myNodeID;
 	private int[] quorum;
 	private Boolean token;
-	private Boolean critical_section;
+	private Boolean criticalSection;
 	
-	MessagePassingRemote(PriorityBlockingQueue<QueueObject> queue, int[] quorum) throws RemoteException 
+	MessagePassingRemote(int myNodeID,PriorityBlockingQueue<QueueObject> queue, int[] quorum, Boolean token) throws RemoteException 
 	{
 		super();
 		//TODO intialize myNodeId
+		this.myNodeID = myNodeID;
 		this.queue = queue;
 		this.quorum  = quorum;
+		this.token = token;
+		this.criticalSection = false;
 	}
 
 	@Override
@@ -39,39 +42,111 @@ public class MessagePassingRemote extends UnicastRemoteObject implements Message
 
 	@Override
 	public void receiveRequest(int timestamp, int sender)
-			throws RemoteException {
+			throws RemoteException
+	{
+		System.out.println("Message Recieved to " + myNodeID + " from " + sender);
 		queue.add(new QueueObject(timestamp, sender));
 		
-		if(token && !critical_section)
+		if(token && !criticalSection)
 		{
-			 QueueObject queueObject = queue.poll();
+			 QueueObject queueObject = queue.peek();
 			 
 			 int TokenRequestor = queueObject.getSender();
 			 
-			 //TODO Send Token to Requestor. To do this you have implement the receive token method
+			 MessagePassing stub;
+			try 
+			{
+				stub = (MessagePassing) Naming.lookup("rmi://net"+String.format("%02d",sender)+".utdallas.edu:5000/mutex");
+				stub.receiveToken(myNodeID);
+				token = false;
+			}
+			catch (MalformedURLException | NotBoundException e)
+			{
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
 		else if(!token)
 		{
 			for(int QuorumMember : quorum)
 			{
-				if(QuorumMember != myNodeId)
+				if(QuorumMember != myNodeID && QuorumMember != sender)
 				{
 					//TODO implement request token function
 					MessagePassing stub;
-					try {
-						stub = (MessagePassing) Naming.lookup("rmi://localhost:"+ (5000 + QuorumMember) +"/mutex");
-
-						stub.receiveRequest(1, 1);
-					} catch (MalformedURLException e) {
+					try 
+					{
+						stub = (MessagePassing) Naming.lookup("rmi://net"+String.format("%02d",QuorumMember)+".utdallas.edu:5000/mutex");
+						stub.askToken(timestamp, myNodeID);
+					} 
+					catch (MalformedURLException e) 
+					{
 						// TODO Auto-generated catch block
 						e.printStackTrace();
-					} catch (NotBoundException e) {
+					}
+					catch (NotBoundException e) 
+					{
 						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
 				}
 			}
 		}
+	}
+
+	@Override
+	public void askToken(int timestamp, int sender) throws RemoteException
+	{
+		// TODO Auto-generated method stub
+		System.out.println("Ask Token Recieved to " + myNodeID + " from " + sender);
 		
+		if(token && !criticalSection)
+		{			
+			MessagePassing stub;
+			try 
+			{
+				stub = (MessagePassing) Naming.lookup("rmi://net"+String.format("%02d",sender)+".utdallas.edu:5000/mutex");
+				stub.receiveToken(myNodeID);
+				token = false;
+			}
+			catch (MalformedURLException | NotBoundException e)
+			{
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
+		}		
+	}
+
+	@Override
+	public void receiveToken(int sender) throws RemoteException 
+	{
+		System.out.println("My id is "+ myNodeID +" I have the token from " + sender);
+		
+		if(!queue.isEmpty())
+		{
+			QueueObject queueObject = queue.peek();
+			 
+			int TokenRequestor = queueObject.getSender();
+			 
+			if(TokenRequestor == myNodeID)
+			{
+				criticalSection = true;
+				return;
+			}
+			
+			MessagePassing stub;
+			try 
+			{
+				stub = (MessagePassing) Naming.lookup("rmi://net"+String.format("%02d",TokenRequestor)+".utdallas.edu:5000/mutex");
+				stub.receiveToken(myNodeID);
+				token = false;
+			}
+			catch (MalformedURLException | NotBoundException e)
+			{
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
 	}
 }

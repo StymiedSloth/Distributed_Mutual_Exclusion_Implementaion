@@ -11,12 +11,16 @@ import com.aos.common.QueueObject;
 public class TestServer implements Runnable
 {
 	private Thread t;
+	private int myNodeID;
 	private PriorityBlockingQueue<QueueObject> queue;
 	private int[] quorum;
+	private Boolean token;
 	
-	public TestServer(PriorityBlockingQueue<QueueObject> queue, int[] quorum) {
+	public TestServer(int myNodeID,PriorityBlockingQueue<QueueObject> queue, int[] quorum, Boolean token) {
+		this.myNodeID = myNodeID;
 		this.queue = queue;		
 		this.quorum = quorum;
+		this.token = token;
 	}
 	
 	@Override
@@ -25,8 +29,8 @@ public class TestServer implements Runnable
 		try
 		{
 			LocateRegistry.createRegistry(5000);
-			MessagePassing stub = new MessagePassingRemote(queue,quorum);
-			Naming.rebind("rmi://localhost:5000/mutex",stub);
+			MessagePassing stub = new MessagePassingRemote(myNodeID,queue,quorum,token);
+			Naming.rebind("rmi://net"+String.format("%02d",myNodeID)+".utdallas.edu:5000/mutex",stub);
 		}
 		catch(Exception ex)
 		{

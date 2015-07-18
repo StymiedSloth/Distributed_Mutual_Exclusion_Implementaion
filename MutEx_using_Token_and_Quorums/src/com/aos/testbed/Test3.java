@@ -6,20 +6,20 @@ import com.aos.client.TestClient;
 import com.aos.common.QueueObject;
 import com.aos.server.TestServer;
 
-public class Test 
+public class Test3 
 {
 	public static void main(String args[])
 	{		
 		PriorityBlockingQueue<QueueObject> sharedQueue = new PriorityBlockingQueue<QueueObject>();
 		
-		int[] node1Quorum = {1,2,3}; 
+		int[] node3Quorum = {1,3,4};
 		
 		System.out.println("Initiating Sequence");
-		TestServer node1Server = new TestServer(1,sharedQueue,node1Quorum,true);
-		TestClient node1Client = new TestClient(1,sharedQueue,node1Quorum,true);
-				
-		node1Server.start();
 
+		TestServer node3Server = new TestServer(3,sharedQueue,node3Quorum,false);
+		TestClient node3Client = new TestClient(3,sharedQueue,node3Quorum,false);
+
+		node3Server.start();
 		try
 		{
 			Thread.sleep(50*1000);
@@ -29,6 +29,6 @@ public class Test
 			System.out.println(ex);
 		}
 		
-		node1Client.start();
+//		node3Client.start();
 	}
 }
