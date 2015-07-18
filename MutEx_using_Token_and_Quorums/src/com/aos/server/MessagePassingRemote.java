@@ -43,6 +43,38 @@ public class MessagePassingRemote extends UnicastRemoteObject implements Message
 	}
 
 	@Override
+	public void sendRequest(int timestamp, int sender) throws RemoteException {
+		this.timestamp++;
+		
+		QueueObject queueObject = new QueueObject(timestamp, myNodeID);
+		
+		queue.add(queueObject);
+		
+		for(int QuorumMember : quorum)
+		{
+			if(QuorumMember != myNodeID)
+			{
+				MessagePassing stub;
+				try 
+				{
+					stub = (MessagePassing) Naming.lookup("rmi://net"+String.format("%02d",QuorumMember)+".utdallas.edu:5000/mutex");
+					stub.receiveRequest(timestamp, myNodeID);
+				} 
+				catch (MalformedURLException e) 
+				{
+					e.printStackTrace();
+				}
+				catch (NotBoundException e) 
+				{
+					e.printStackTrace();
+				}
+			}
+		}
+		
+		
+	}
+	
+	@Override
 	public void receiveRequest(int timestamp, int sender)
 			throws RemoteException
 	{
@@ -175,7 +207,6 @@ public class MessagePassingRemote extends UnicastRemoteObject implements Message
 		}
 	}
 	
-
 	@Override
 	public void releaseCriticalSection() throws RemoteException {
 		for(int QuorumMember : quorum)
