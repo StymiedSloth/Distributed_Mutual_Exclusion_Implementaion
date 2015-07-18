@@ -22,6 +22,9 @@ public class MessagePassingRemote extends UnicastRemoteObject implements Message
 	private Boolean token;
 	private Boolean criticalSection;
 	
+	//TODO Discuss with team about timestamp's position
+	private int timestamp;
+	
 	MessagePassingRemote(int myNodeID,PriorityBlockingQueue<QueueObject> queue, int[] quorum, Boolean token) throws RemoteException 
 	{
 		super();
@@ -148,5 +151,64 @@ public class MessagePassingRemote extends UnicastRemoteObject implements Message
 				e.printStackTrace();
 			}
 		}
+	}
+
+	@Override
+	public void receiveReleaseMessage(int timestamp, int sender)
+			throws RemoteException {
+		System.out.println("My id is "+ myNodeID +" I have received a release msg from " + sender);
+		
+		this.timestamp = Math.max(this.timestamp , timestamp);
+		
+		QueueObject queueObject = queue.poll();
+		
+		int tokenHolder = queueObject.getSender();
+		
+		if(queue.size() > 0)
+		{
+			QueueObject nextRequestorInQueue = queue.peek();
+			MessagePassing stub;
+			try 
+			{
+				stub = (MessagePassing) Naming.lookup("rmi://net"+String.format("%02d",tokenHolder)+".utdallas.edu:5000/mutex");
+				stub.askToken( nextRequestorInQueue.getTimestamp() , nextRequestorInQueue.getSender());
+			}
+			catch (MalformedURLException | NotBoundException e)
+			{
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+	}
+	
+
+	@Override
+	public void releaseCriticalSection() throws RemoteException {
+		for(int QuorumMember : quorum)
+		{
+			if(QuorumMember != myNodeID)
+			{
+				MessagePassing stub;
+				try 
+				{
+					stub = (MessagePassing) Naming.lookup("rmi://net"+String.format("%02d",QuorumMember)+".utdallas.edu:5000/mutex");
+					stub.receiveReleaseMessage(timestamp, myNodeID);
+				} 
+				catch (MalformedURLException e) 
+				{
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				catch (NotBoundException e) 
+				{
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		}
+		
+		//Dequeue my own request from my queue.
+		queue.poll();
+		
 	}
 }
