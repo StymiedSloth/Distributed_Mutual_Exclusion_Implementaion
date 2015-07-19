@@ -11,7 +11,6 @@ import com.aos.common.QueueObject;
 
 public class MessagePassingRemote extends UnicastRemoteObject implements MessagePassing
 {
-
 	/**
 	 * 
 	 */
@@ -43,12 +42,49 @@ public class MessagePassingRemote extends UnicastRemoteObject implements Message
 	}
 
 	@Override
-	public void sendRequest(int timestamp, int sender) throws RemoteException {
+	public void sendRequest(int timestamp, int sender) throws RemoteException 
+	{
+		System.out.println("Request Sent from " + sender);
 		this.timestamp++;
 		
-		QueueObject queueObject = new QueueObject(timestamp, myNodeID);
+		QueueObject queueObject = new QueueObject(this.timestamp, myNodeID);
 		
-		queue.add(queueObject);
+		if(!queue.contains(queueObject))
+			queue.add(queueObject);
+		
+		for(QueueObject q : queue)
+		{
+			System.out.println(q.getTimestamp() + " " + q.getSender());
+		}
+		
+		QueueObject obj = queue.peek();
+		
+		if(obj.getSender() == myNodeID && token == true)
+		{
+			criticalSection = true;
+			token = true;
+			try
+			{
+				Thread.sleep(1000);
+			} catch (InterruptedException e)
+			{
+				e.printStackTrace();
+			}
+			
+			queue.remove(new QueueObject(this.timestamp, myNodeID));
+			
+			System.out.println("Release Critical Section " + myNodeID);
+			
+			for(QueueObject q : queue)
+			{
+				System.out.println(q.getTimestamp() + " " + q.getSender());
+			}
+			
+			criticalSection = false;	
+			
+			return;
+
+		}
 		
 		for(int QuorumMember : quorum)
 		{
@@ -69,9 +105,7 @@ public class MessagePassingRemote extends UnicastRemoteObject implements Message
 					e.printStackTrace();
 				}
 			}
-		}
-		
-		
+		}		
 	}
 	
 	@Override
@@ -79,16 +113,23 @@ public class MessagePassingRemote extends UnicastRemoteObject implements Message
 			throws RemoteException
 	{
 		System.out.println("Message Recieved to " + myNodeID + " from " + sender);
-		queue.add(new QueueObject(timestamp, sender));
+		
+		if(!queue.contains(new QueueObject(timestamp, sender)))
+			queue.add(new QueueObject(timestamp, sender));
+		
+		for(QueueObject q : queue)
+		{
+			System.out.println(q.getTimestamp() + " " + q.getSender());
+		}
 		
 		if(token && !criticalSection)
 		{
 			
-			 QueueObject queueObject = queue.peek();
+			QueueObject queueObject = queue.peek();
 			 
-			 int TokenRequestor = queueObject.getSender();
+			int TokenRequestor = queueObject.getSender();
 			 
-			 MessagePassing stub;
+			MessagePassing stub;
 			try 
 			{
 				//TODO DIsucss with team - This might be an issue, since any asker will get the token, we 
@@ -101,6 +142,7 @@ public class MessagePassingRemote extends UnicastRemoteObject implements Message
 			{
 				e.printStackTrace();
 			}
+			
 		}
 		else if(!token)
 		{
@@ -124,6 +166,7 @@ public class MessagePassingRemote extends UnicastRemoteObject implements Message
 					}
 				}
 			}
+			
 		}
 	}
 
@@ -145,7 +188,6 @@ public class MessagePassingRemote extends UnicastRemoteObject implements Message
 			{
 				e.printStackTrace();
 			}
-			
 		}		
 	}
 
@@ -153,6 +195,11 @@ public class MessagePassingRemote extends UnicastRemoteObject implements Message
 	public void receiveToken(int sender) throws RemoteException 
 	{
 		System.out.println("My id is "+ myNodeID +" I have the token from " + sender);
+		
+		for(QueueObject q : queue)
+		{
+			System.out.println(q.getTimestamp() + " " + q.getSender());
+		}
 		
 		if(!queue.isEmpty())
 		{
@@ -163,6 +210,17 @@ public class MessagePassingRemote extends UnicastRemoteObject implements Message
 			if(TokenRequestor == myNodeID)
 			{
 				criticalSection = true;
+				token = true;
+				try
+				{
+					Thread.sleep(1000);
+				} catch (InterruptedException e)
+				{
+					e.printStackTrace();
+				}
+				
+				releaseCriticalSection();
+				
 				return;
 			}
 			
@@ -183,12 +241,22 @@ public class MessagePassingRemote extends UnicastRemoteObject implements Message
 	@Override
 	public void receiveReleaseMessage(int timestamp, int sender)
 			throws RemoteException {
+		
+		while(queue.isEmpty());
+		
+		queue.remove(new QueueObject(this.timestamp, sender));
+		
 		System.out.println("My id is "+ myNodeID +" I have received a release msg from " + sender);
 		
+		for(QueueObject q : queue)
+		{
+			System.out.println(q.getTimestamp() + " " + q.getSender());
+		}
+		
 		this.timestamp = Math.max(this.timestamp , timestamp);
+
 		
-		QueueObject queueObject = queue.poll();
-		
+		QueueObject queueObject = new QueueObject(timestamp, sender);
 		int tokenHolder = queueObject.getSender();
 		
 		if(queue.size() > 0)
@@ -208,7 +276,15 @@ public class MessagePassingRemote extends UnicastRemoteObject implements Message
 	}
 	
 	@Override
-	public void releaseCriticalSection() throws RemoteException {
+	public void releaseCriticalSection() throws RemoteException 
+	{
+		System.out.println("Critical Section release of " + myNodeID);
+
+		for(QueueObject q : queue)
+		{
+			System.out.println(q.getTimestamp() + " " + q.getSender());
+		}
+		
 		for(int QuorumMember : quorum)
 		{
 			if(QuorumMember != myNodeID)
@@ -230,8 +306,15 @@ public class MessagePassingRemote extends UnicastRemoteObject implements Message
 			}
 		}
 		
+		//TODO: check for the remove object.
 		//Dequeue my own request from my queue.
-		queue.poll();
+		queue.remove(new QueueObject(timestamp, myNodeID));
 		
+		criticalSection = false;		
+	
+		for(QueueObject q : queue)
+		{
+			System.out.println(q.getTimestamp() + " " + q.getSender());
+		}
 	}
 }

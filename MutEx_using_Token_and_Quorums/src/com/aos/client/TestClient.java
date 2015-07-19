@@ -1,5 +1,8 @@
 package com.aos.client;
+import java.net.MalformedURLException;
 import java.rmi.Naming;
+import java.rmi.NotBoundException;
+import java.rmi.RemoteException;
 import java.util.concurrent.PriorityBlockingQueue;
 
 import com.aos.common.MessagePassing;
@@ -28,11 +31,31 @@ public class TestClient implements Runnable
 		
 		System.out.println("Client Thread start " + myNodeID + " with " + quorum.length);
 		
-		while(i < quorum.length)
+		try 
+		{
+			MessagePassing stub;
+			try 
+			{
+				stub = (MessagePassing) Naming.lookup("rmi://net"+String.format("%02d",myNodeID)+".utdallas.edu:5000/mutex");
+				stub.sendRequest(1, myNodeID);
+			} 
+			catch (MalformedURLException | NotBoundException e)
+			{
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		catch (RemoteException e) 
+		{
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		/*while(i < quorum.length)
 		{
 			try
 			{
 				MessagePassing stub = (MessagePassing) Naming.lookup("rmi://net"+String.format("%02d",quorum[i])+".utdallas.edu:5000/mutex");
+				queue.add(new QueueObject(1, myNodeID));
 				
 				if(quorum[i] != myNodeID)
 					stub.receiveRequest(1, myNodeID);
@@ -43,7 +66,7 @@ public class TestClient implements Runnable
 			{
 				System.out.println(ex);
 			}
-		}
+		}*/
 	}
 	
 	public void start()

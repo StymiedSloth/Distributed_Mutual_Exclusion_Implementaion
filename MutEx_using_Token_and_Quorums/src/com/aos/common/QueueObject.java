@@ -28,14 +28,22 @@ public class QueueObject implements Comparable<QueueObject>{
 	}
 
     public int compareTo(QueueObject other){
-    	if(other.timestamp > this.timestamp)
+    	/*if(other.timestamp > this.timestamp)
     		return -1;
     	else if(other.timestamp == this.timestamp && other.sender < this.sender)
     			return 1;
 		else 
-			return 0;
-    			
+			return 0;*/
+    	
+    	if(other.timestamp == this.timestamp && other.sender == this.sender)
+    		return 0;
+    	
+    	if(other.timestamp > this.timestamp)
+    		return -1;
+    	
+    	if(other.timestamp == this.timestamp && other.sender > this.sender)
+    		return -1;
+    	
+    	return 1;
     }
-
-
 }
