@@ -69,8 +69,7 @@ public class LoginView {
 class MyButtonListener implements ActionListener {
 
 	@Override
-	public void actionPerformed(ActionEvent e) {
-		JButton source = (JButton) e.getSource();
+	public void actionPerformed(ActionEvent e) {		
 		String[] credentials = LoginView.getCredentials();
 		LoginView.frame.setVisible(false);
 		LoginView.frame.dispose();
