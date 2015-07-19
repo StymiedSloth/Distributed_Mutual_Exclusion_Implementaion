@@ -10,18 +10,21 @@ import com.jcraft.jsch.Session;
 public class TestBed {
 
 	public static void main(String[] args) {
-		
+		LoginView.getView();
 	}
 
-	public static void startExecution()
+	public static void startExecution(String username, String password)
 	{
 		try{
 		      JSch jsch=new JSch();  
-		 
-		      Session session=jsch.getSession("vdr140330", "//Enter IP here" , 22);
+		      Session session = jsch.getSession(username, "net01.utdallas.edu", 22);
+              session.setConfig("StrictHostKeyChecking", "no");
+              session.setPassword(password);
+              session.setConfig("PreferredAuthentications","password");
+              session.connect();
 		      
 		      Channel channel=session.openChannel("exec");
-		      ((ChannelExec)channel).setCommand("//command goes here");
+		      ((ChannelExec)channel).setCommand("javac Test/Test.java \n java -cp .:Test/ Test");
 		      
 		      channel.setInputStream(null);
 		      
