@@ -28,9 +28,9 @@ public class TestServer implements Runnable
 	{
 		try
 		{
-			LocateRegistry.createRegistry(5000);
+			LocateRegistry.createRegistry(5001);
 			MessagePassing stub = new MessagePassingRemote(myNodeID,queue,quorum,token);
-			Naming.rebind("rmi://net"+String.format("%02d",myNodeID)+".utdallas.edu:5000/mutex",stub);
+			Naming.rebind("rmi://net"+String.format("%02d",myNodeID)+".utdallas.edu:5001/mutex",stub);
 		}
 		catch(Exception ex)
 		{

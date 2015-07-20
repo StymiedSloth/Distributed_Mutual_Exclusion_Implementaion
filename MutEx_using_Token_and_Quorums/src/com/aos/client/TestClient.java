@@ -36,8 +36,8 @@ public class TestClient implements Runnable
 			MessagePassing stub;
 			try 
 			{
-				stub = (MessagePassing) Naming.lookup("rmi://net"+String.format("%02d",myNodeID)+".utdallas.edu:5000/mutex");
-				stub.sendRequest(1, myNodeID);
+				stub = (MessagePassing) Naming.lookup("rmi://net"+String.format("%02d",myNodeID)+".utdallas.edu:5001/mutex");
+				stub.sendRequest(0, myNodeID);
 			} 
 			catch (MalformedURLException | NotBoundException e)
 			{

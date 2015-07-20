@@ -28,6 +28,6 @@ public class Test2
 			System.out.println(ex);
 		}
 		
-//		node2Client.start();
+		node2Client.start();
 	}
 }

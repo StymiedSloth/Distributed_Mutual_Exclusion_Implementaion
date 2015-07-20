@@ -29,6 +29,6 @@ public class Test3
 			System.out.println(ex);
 		}
 		
-//		node3Client.start();
+		node3Client.start();
 	}
 }

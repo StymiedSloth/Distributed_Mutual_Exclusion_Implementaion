@@ -46,4 +46,14 @@ public class QueueObject implements Comparable<QueueObject>{
     	
     	return 1;
     }
+    @Override
+    public boolean equals(Object other)
+	{	
+		if (this == other)
+			return true;
+		if(((QueueObject)other).timestamp == this.timestamp && ((QueueObject)other).sender == this.sender)
+			return true;	
+		else 
+			return false;
+	}
 }

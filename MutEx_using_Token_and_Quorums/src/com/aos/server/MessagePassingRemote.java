@@ -24,6 +24,9 @@ public class MessagePassingRemote extends UnicastRemoteObject implements Message
 	//TODO Discuss with team about timestamp's position
 	private int timestamp;
 	
+	private boolean[] requestMessageReceived;
+	private boolean[] requestMessageSent;
+	
 	MessagePassingRemote(int myNodeID,PriorityBlockingQueue<QueueObject> queue, int[] quorum, Boolean token) throws RemoteException 
 	{
 		super();
@@ -32,6 +35,15 @@ public class MessagePassingRemote extends UnicastRemoteObject implements Message
 		this.quorum  = quorum;
 		this.token = token;
 		this.criticalSection = false;
+		
+		this.requestMessageReceived = new boolean[16];
+		this.requestMessageSent = new boolean[16];
+		
+		for (boolean b:requestMessageReceived)
+			b = false;
+
+		for (boolean b:requestMessageSent)
+			b = false;
 	}
 
 	@Override
@@ -45,7 +57,10 @@ public class MessagePassingRemote extends UnicastRemoteObject implements Message
 	public void sendRequest(int timestamp, int sender) throws RemoteException 
 	{
 		System.out.println("Request Sent from " + sender);
-		this.timestamp++;
+		this.timestamp = timestamp + 1;
+		
+		for (boolean b:requestMessageSent)
+			b = false;
 		
 		QueueObject queueObject = new QueueObject(this.timestamp, myNodeID);
 		
@@ -71,7 +86,13 @@ public class MessagePassingRemote extends UnicastRemoteObject implements Message
 				e.printStackTrace();
 			}
 			
-			queue.remove(new QueueObject(this.timestamp, myNodeID));
+			//queue.remove(new QueueObject(this.timestamp, myNodeID));
+			
+			for(QueueObject q : queue)
+			{
+				if(q.getTimestamp()==this.timestamp && q.getSender()==myNodeID)
+					queue.remove(q);
+			}
 			
 			System.out.println("Release Critical Section " + myNodeID);
 			
@@ -88,13 +109,20 @@ public class MessagePassingRemote extends UnicastRemoteObject implements Message
 		
 		for(int QuorumMember : quorum)
 		{
+			System.out.println("Qurum Member " + QuorumMember);
 			if(QuorumMember != myNodeID)
 			{
 				MessagePassing stub;
 				try 
 				{
-					stub = (MessagePassing) Naming.lookup("rmi://net"+String.format("%02d",QuorumMember)+".utdallas.edu:5000/mutex");
-					stub.receiveRequest(timestamp, myNodeID);
+					System.out.println("Request Message send to " + QuorumMember);
+					
+					if(requestMessageSent[QuorumMember] == false)
+					{
+						requestMessageSent[QuorumMember] = true;
+						stub = (MessagePassing) Naming.lookup("rmi://net"+String.format("%02d",QuorumMember)+".utdallas.edu:5001/mutex");
+						stub.receiveRequest(this.timestamp, myNodeID);
+					}
 				} 
 				catch (MalformedURLException e) 
 				{
@@ -106,6 +134,7 @@ public class MessagePassingRemote extends UnicastRemoteObject implements Message
 				}
 			}
 		}		
+		System.out.println("Exited from sendRequest");
 	}
 	
 	@Override
@@ -116,6 +145,8 @@ public class MessagePassingRemote extends UnicastRemoteObject implements Message
 		
 		if(!queue.contains(new QueueObject(timestamp, sender)))
 			queue.add(new QueueObject(timestamp, sender));
+		
+		requestMessageReceived[sender] = true;
 		
 		for(QueueObject q : queue)
 		{
@@ -134,9 +165,11 @@ public class MessagePassingRemote extends UnicastRemoteObject implements Message
 			{
 				//TODO DIsucss with team - This might be an issue, since any asker will get the token, we 
 				//have to dequeue the first request from queue and only then send it out. 
-				stub = (MessagePassing) Naming.lookup("rmi://net"+String.format("%02d",sender)+".utdallas.edu:5000/mutex");
-				stub.receiveToken(myNodeID);
 				token = false;
+				stub = (MessagePassing) Naming.lookup("rmi://net"+String.format("%02d",sender)+".utdallas.edu:5001/mutex");
+				stub.receiveToken(myNodeID);
+				System.out.println("Token send to" + sender);
+				
 			}
 			catch (MalformedURLException | NotBoundException e)
 			{
@@ -153,7 +186,7 @@ public class MessagePassingRemote extends UnicastRemoteObject implements Message
 					MessagePassing stub;
 					try 
 					{
-						stub = (MessagePassing) Naming.lookup("rmi://net"+String.format("%02d",QuorumMember)+".utdallas.edu:5000/mutex");
+						stub = (MessagePassing) Naming.lookup("rmi://net"+String.format("%02d",QuorumMember)+".utdallas.edu:5001/mutex");
 						stub.askToken(timestamp, myNodeID);
 					} 
 					catch (MalformedURLException e) 
@@ -166,8 +199,8 @@ public class MessagePassingRemote extends UnicastRemoteObject implements Message
 					}
 				}
 			}
-			
 		}
+		System.out.println("Exited from recieve Request from " + sender);
 	}
 
 	@Override
@@ -180,9 +213,10 @@ public class MessagePassingRemote extends UnicastRemoteObject implements Message
 			MessagePassing stub;
 			try 
 			{
-				stub = (MessagePassing) Naming.lookup("rmi://net"+String.format("%02d",sender)+".utdallas.edu:5000/mutex");
-				stub.receiveToken(myNodeID);
 				token = false;
+				stub = (MessagePassing) Naming.lookup("rmi://net"+String.format("%02d",sender)+".utdallas.edu:5001/mutex");
+				stub.receiveToken(myNodeID);
+				
 			}
 			catch (MalformedURLException | NotBoundException e)
 			{
@@ -227,24 +261,35 @@ public class MessagePassingRemote extends UnicastRemoteObject implements Message
 			MessagePassing stub;
 			try 
 			{
-				stub = (MessagePassing) Naming.lookup("rmi://net"+String.format("%02d",TokenRequestor)+".utdallas.edu:5000/mutex");
-				stub.receiveToken(myNodeID);
 				token = false;
+				stub = (MessagePassing) Naming.lookup("rmi://net"+String.format("%02d",TokenRequestor)+".utdallas.edu:5001/mutex");
+				stub.receiveToken(myNodeID);
+				
 			}
 			catch (MalformedURLException | NotBoundException e)
 			{
 				e.printStackTrace();
 			}
 		}
+		
+		System.out.println("Exited from Recieve Token " + sender);
 	}
 
 	@Override
 	public void receiveReleaseMessage(int timestamp, int sender)
 			throws RemoteException {
 		
-		while(queue.isEmpty());
+		while(requestMessageReceived[sender] == false);
 		
-		queue.remove(new QueueObject(this.timestamp, sender));
+		requestMessageReceived[sender] = false;
+		
+		//queue.remove(new QueueObject(this.timestamp, sender));
+		
+		for(QueueObject q : queue)
+		{
+			if(q.getTimestamp()== timestamp && q.getSender()==sender)
+				queue.remove(q);
+		}
 		
 		System.out.println("My id is "+ myNodeID +" I have received a release msg from " + sender);
 		
@@ -265,7 +310,7 @@ public class MessagePassingRemote extends UnicastRemoteObject implements Message
 			MessagePassing stub;
 			try 
 			{
-				stub = (MessagePassing) Naming.lookup("rmi://net"+String.format("%02d",tokenHolder)+".utdallas.edu:5000/mutex");
+				stub = (MessagePassing) Naming.lookup("rmi://net"+String.format("%02d",tokenHolder)+".utdallas.edu:5001/mutex");
 				stub.askToken( nextRequestorInQueue.getTimestamp() , nextRequestorInQueue.getSender());
 			}
 			catch (MalformedURLException | NotBoundException e)
@@ -273,6 +318,8 @@ public class MessagePassingRemote extends UnicastRemoteObject implements Message
 				e.printStackTrace();
 			}
 		}
+		
+		System.out.println("Exited from Release from " + sender);
 	}
 	
 	@Override
@@ -292,9 +339,13 @@ public class MessagePassingRemote extends UnicastRemoteObject implements Message
 				MessagePassing stub;
 				try 
 				{
-					stub = (MessagePassing) Naming.lookup("rmi://net"+String.format("%02d",QuorumMember)+".utdallas.edu:5000/mutex");
-					//TODO Discuss with team if the below needs to be a Queue.peek() since a node can make multiple requests,
-					//the first item in it's queue would be the first request which has been handled
+					stub = (MessagePassing) Naming.lookup("rmi://net"+String.format("%02d",QuorumMember)+".utdallas.edu:5001/mutex");
+					
+					if(requestMessageSent[QuorumMember] == false)
+					{
+						stub.receiveRequest(timestamp, myNodeID);
+						requestMessageSent[QuorumMember] = true;
+					}
 					stub.receiveReleaseMessage(timestamp, myNodeID);
 				} 
 				catch (MalformedURLException e) 
@@ -310,7 +361,13 @@ public class MessagePassingRemote extends UnicastRemoteObject implements Message
 		
 		//TODO: check for the remove object.
 		//Dequeue my own request from my queue.
-		queue.remove(new QueueObject(timestamp, myNodeID));
+		//queue.remove(new QueueObject(timestamp, myNodeID));
+		
+		for(QueueObject q : queue)
+		{
+			if(q.getTimestamp()== timestamp && q.getSender()==myNodeID)
+				queue.remove(q);
+		}
 		
 		criticalSection = false;		
 	
