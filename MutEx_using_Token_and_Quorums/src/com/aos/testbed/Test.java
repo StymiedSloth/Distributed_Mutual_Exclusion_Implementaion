@@ -8,15 +8,32 @@ import com.aos.server.TestServer;
 
 public class Test 
 {
+	private static int myNodeId;
+	private static int totalNumberOfNodes;
+	private static int requestTime;
+	private static Boolean Token;
+	
 	public static void main(String args[])
 	{		
 		PriorityBlockingQueue<QueueObject> sharedQueue = new PriorityBlockingQueue<QueueObject>();
+<<<<<<< HEAD
 		
 		int[] node1Quorum = {1,2,3};
 
+=======
+
+		myNodeId = Integer.parseInt(args[0]);
+		totalNumberOfNodes = Integer.parseInt(args[1]);
+		requestTime = Integer.parseInt(args[2]);
+		Token = Boolean.parseBoolean(args[3]);
+
+		int[] myQuorum = findQuorum(myNodeId, totalNumberOfNodes);
+
+		
+>>>>>>> 2da3b42ce66aae517a7829d55321f363365aac1c
 		System.out.println("Initiating Sequence");
-		TestServer node1Server = new TestServer(1,sharedQueue,node1Quorum,true);
-		TestClient node1Client = new TestClient(1,sharedQueue,node1Quorum,true);
+		TestServer node1Server = new TestServer(myNodeId,sharedQueue,myQuorum,Token);
+		TestClient node1Client = new TestClient(myNodeId,sharedQueue,myQuorum,Token);
 				
 		node1Server.start();
 
