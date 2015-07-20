@@ -16,11 +16,6 @@ public class Test
 	public static void main(String args[])
 	{		
 		PriorityBlockingQueue<QueueObject> sharedQueue = new PriorityBlockingQueue<QueueObject>();
-<<<<<<< HEAD
-		
-		int[] node1Quorum = {1,2,3};
-
-=======
 
 		myNodeId = Integer.parseInt(args[0]);
 		totalNumberOfNodes = Integer.parseInt(args[1]);
@@ -29,8 +24,6 @@ public class Test
 
 		int[] myQuorum = findQuorum(myNodeId, totalNumberOfNodes);
 
-		
->>>>>>> 2da3b42ce66aae517a7829d55321f363365aac1c
 		System.out.println("Initiating Sequence");
 		TestServer node1Server = new TestServer(myNodeId,sharedQueue,myQuorum,Token);
 		TestClient node1Client = new TestClient(myNodeId,sharedQueue,myQuorum,Token);
