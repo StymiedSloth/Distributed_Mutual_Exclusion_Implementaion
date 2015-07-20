@@ -33,6 +33,7 @@ public class TestBed {
 	              session.setPassword(password);
 	              session.setConfig("PreferredAuthentications","password");
 	              session.connect();
+	              
 			      
 			      Channel channel=session.openChannel(COMMAND_TO_UNIX);
 			      //Java arguments myNodeId, totalNumberofNodes,requestTimeStamp, token
