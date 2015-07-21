@@ -1,11 +1,17 @@
 package com.utd.aos;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.InputStream;
 
+import com.google.gson.Gson;
 import com.jcraft.jsch.Channel;
 import com.jcraft.jsch.ChannelExec;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.Session;
+
 
 public class TestBed {
 
@@ -15,17 +21,39 @@ public class TestBed {
 	private final static String SERVER_ADDRESS_PREFIX = "net";
 	private final static String SERVER_ADDRESS_SUFFIX = ".utdallas.edu";
 	private final static String COMMAND_TO_UNIX = "exec";
+	private static final String CONFIG_FILEPATH = "nodesettings.config";
 	
 	
 	public static void main(String[] args) {
 		LoginView.getView();
 	}
 
+	private static BufferedReader getBufferedReader(String filePath)
+	{
+		try {
+			return new BufferedReader(new FileReader(filePath));
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+	
 	public static void startExecution(String username, String password)
 	{
 		try{
-				
+			  Gson gson = new Gson();
+			  
 		      JSch jsch=new JSch();  
+		      File file = new File(CONFIG_FILEPATH);
+		      if(!file.exists())
+		    	  {
+		    	  	System.out.print("Please configure the Node Settings File");
+		    	  	return;
+		    	  }
+		      
+		      
+		      NodeSetting[] nodeSettings = gson.fromJson(getBufferedReader(CONFIG_FILEPATH), NodeSetting[].class);
+		      
 		      for(int i=1;i<= TOTAL_NUMBER_OF_NODES;i++)
 		      {
 			      Session session = jsch.getSession(username, SERVER_ADDRESS_PREFIX +  String.format("%02d",i) + SERVER_ADDRESS_SUFFIX, 22);
@@ -37,8 +65,10 @@ public class TestBed {
 			      
 			      Channel channel=session.openChannel(COMMAND_TO_UNIX);
 			      //Java arguments myNodeId, totalNumberofNodes,requestTimeStamp, token
-			      ((ChannelExec)channel).setCommand(COMPILE_COMMAND + " \n" + EXECUTE_COMMAND + " " + "1 " + TOTAL_NUMBER_OF_NODES + " " + 2 + " " + "true");
-			      
+			      ((ChannelExec)channel).setCommand(COMPILE_COMMAND + " \n" + EXECUTE_COMMAND 
+			    		  + " " + nodeSettings[i-1].getId() +" " + TOTAL_NUMBER_OF_NODES + " " 
+			    		  + nodeSettings[i-1].getTimestamp() + " " + nodeSettings[i-1].getToken());			      
+
 			      channel.setInputStream(null);
 			      
 			      ((ChannelExec)channel).setErrStream(System.err);
