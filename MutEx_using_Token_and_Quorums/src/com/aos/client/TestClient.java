@@ -17,7 +17,7 @@ public class TestClient implements Runnable
 	private int[] quorum;
 	private Boolean token;
 	private int requestTime;
-	private static int timestamp;
+	private static int timestamp = 0;
 	
 	public TestClient(int myNodeID,PriorityBlockingQueue<QueueObject> queue,int[] quorum,Boolean token,int requestTime) {
 		this.myNodeID = myNodeID;
@@ -42,8 +42,9 @@ public class TestClient implements Runnable
 		while (true) {
 			try 
 			{			
-				if(getTimeStamp() == requestTime)
+				if(requestTime <= getTimeStamp())
 				{
+					System.out.println(myNodeID +"'s timestamp is " +  getTimeStamp());
 					MessagePassing stub;
 					stub = (MessagePassing) Naming.lookup("rmi://net"+String.format("%02d",myNodeID)+".utdallas.edu:5001/mutex");
 					stub.sendRequest(requestTime, myNodeID);

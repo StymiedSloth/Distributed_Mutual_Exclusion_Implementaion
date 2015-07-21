@@ -57,7 +57,6 @@ public class MessagePassingRemote extends UnicastRemoteObject implements Message
 	@Override
 	public void sendRequest(int timestamp, int sender) throws RemoteException 
 	{
-		System.out.println("Request Sent from " + sender);
 		this.timestamp = timestamp + 1;
 		
 		for (boolean b:requestMessageSent)
@@ -68,6 +67,7 @@ public class MessagePassingRemote extends UnicastRemoteObject implements Message
 		if(!queue.contains(queueObject))
 			queue.add(queueObject);
 		
+		System.out.println("Queue at timestamp  " +timestamp + "is ");
 		for(QueueObject q : queue)
 		{
 			System.out.println(q.getTimestamp() + " " + q.getSender());
@@ -77,6 +77,7 @@ public class MessagePassingRemote extends UnicastRemoteObject implements Message
 		
 		if(obj.getSender() == myNodeID && token == true)
 		{
+			System.out.println("Enter Critical Section " + myNodeID);
 			criticalSection = true;
 			token = true;
 			try
@@ -96,7 +97,7 @@ public class MessagePassingRemote extends UnicastRemoteObject implements Message
 			}
 			
 			System.out.println("Release Critical Section " + myNodeID);
-			
+			System.out.println("My queue after release message sent");
 			for(QueueObject q : queue)
 			{
 				System.out.println(q.getTimestamp() + " " + q.getSender());
@@ -107,17 +108,14 @@ public class MessagePassingRemote extends UnicastRemoteObject implements Message
 			return;
 
 		}
-		
 		for(int QuorumMember : quorum)
 		{
-			System.out.println("Qurum Member " + QuorumMember);
 			if(QuorumMember != myNodeID)
 			{
 				MessagePassing stub;
 				try 
 				{
-					System.out.println("Request Message send to " + QuorumMember);
-					
+					System.out.println("I " + sender  +" am sending a request to my quorum member " + QuorumMember);
 					if(requestMessageSent[QuorumMember] == false)
 					{
 						requestMessageSent[QuorumMember] = true;
@@ -135,7 +133,6 @@ public class MessagePassingRemote extends UnicastRemoteObject implements Message
 				}
 			}
 		}		
-		System.out.println("Exited from sendRequest");
 	}
 	
 	@Override
@@ -167,9 +164,9 @@ public class MessagePassingRemote extends UnicastRemoteObject implements Message
 				//TODO DIsucss with team - This might be an issue, since any asker will get the token, we 
 				//have to dequeue the first request from queue and only then send it out. 
 				token = false;
+				System.out.println("Token send to" + sender);
 				stub = (MessagePassing) Naming.lookup("rmi://net"+String.format("%02d",sender)+".utdallas.edu:5001/mutex");
 				stub.receiveToken(myNodeID);
-				System.out.println("Token send to" + sender);
 				
 			}
 			catch (MalformedURLException | NotBoundException e)

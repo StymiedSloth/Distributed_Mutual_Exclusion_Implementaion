@@ -26,14 +26,14 @@ public class Test
 
 		System.out.println("Initiating Sequence");
 		TestServer node1Server = new TestServer(myNodeId,sharedQueue,myQuorum,Token);
-		TestClient node1Client = new TestClient(myNodeId,sharedQueue,myQuorum,Token,requestTime);
+		TestClient node1Client = new TestClient(myNodeId,sharedQueue,myQuorum,Token,requestTime-1);
 		
 		
 		node1Server.start();
 
 		try
 		{
-			Thread.sleep(50*1000);
+			Thread.sleep(5*1000);
 		}
 		catch(Exception ex)
 		{
