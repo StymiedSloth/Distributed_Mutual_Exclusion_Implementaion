@@ -16,57 +16,56 @@ public class TestClient implements Runnable
 	private PriorityBlockingQueue<QueueObject> queue;
 	private int[] quorum;
 	private Boolean token;
+	private int requestTime;
+	private static int timestamp;
 	
-	public TestClient(int myNodeID,PriorityBlockingQueue<QueueObject> queue,int[] quorum,Boolean token) {
+	public TestClient(int myNodeID,PriorityBlockingQueue<QueueObject> queue,int[] quorum,Boolean token,int requestTime) {
 		this.myNodeID = myNodeID;
 		this.queue = queue;		
 		this.quorum = quorum;
 		this.token = token;
+		this.requestTime = requestTime;
+	}
+	
+	public static int getTimeStamp(){
+		return timestamp;
+	}
+	
+	public static void setTimestamp(int latestTimestamp){
+		timestamp = latestTimestamp;
 	}
 	
 	@Override
 	public void run() 
 	{
-		int i = 0;
-		
 		System.out.println("Client Thread start " + myNodeID + " with " + quorum.length);
-		
-		try 
-		{
-			MessagePassing stub;
+		while (true) {
 			try 
+			{			
+				if(getTimeStamp() == requestTime)
+				{
+					MessagePassing stub;
+					stub = (MessagePassing) Naming.lookup("rmi://net"+String.format("%02d",myNodeID)+".utdallas.edu:5001/mutex");
+					stub.sendRequest(requestTime, myNodeID);
+				}
+				Thread.sleep(15000);
+				setTimestamp(getTimeStamp() + 1);
+			}
+			catch (RemoteException e) 
 			{
-				stub = (MessagePassing) Naming.lookup("rmi://net"+String.format("%02d",myNodeID)+".utdallas.edu:5001/mutex");
-				stub.sendRequest(0, myNodeID);
-			} 
-			catch (MalformedURLException | NotBoundException e)
-			{
-				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (InterruptedException e) {
+			
+				e.printStackTrace();
+			} catch (MalformedURLException e) {
+			
+				e.printStackTrace();
+			} catch (NotBoundException e) {
+			
 				e.printStackTrace();
 			}
 		}
-		catch (RemoteException e) 
-		{
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		/*while(i < quorum.length)
-		{
-			try
-			{
-				MessagePassing stub = (MessagePassing) Naming.lookup("rmi://net"+String.format("%02d",quorum[i])+".utdallas.edu:5000/mutex");
-				queue.add(new QueueObject(1, myNodeID));
-				
-				if(quorum[i] != myNodeID)
-					stub.receiveRequest(1, myNodeID);
-				i++;
-				Thread.sleep(2000);
-			}
-			catch(Exception ex)
-			{
-				System.out.println(ex);
-			}
-		}*/
+
 	}
 	
 	public void start()

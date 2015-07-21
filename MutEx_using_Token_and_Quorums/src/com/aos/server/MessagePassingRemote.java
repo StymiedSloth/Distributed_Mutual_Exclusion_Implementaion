@@ -6,6 +6,7 @@ import java.rmi.RemoteException;
 import java.rmi.server.*;
 import java.util.concurrent.PriorityBlockingQueue;
 
+import com.aos.client.TestClient;
 import com.aos.common.MessagePassing;
 import com.aos.common.QueueObject;
 
@@ -299,8 +300,8 @@ public class MessagePassingRemote extends UnicastRemoteObject implements Message
 		}
 		
 		this.timestamp = Math.max(this.timestamp , timestamp);
+		TestClient.setTimestamp(timestamp);
 
-		
 		QueueObject queueObject = new QueueObject(timestamp, sender);
 		int tokenHolder = queueObject.getSender();
 		

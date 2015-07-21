@@ -17,7 +17,7 @@ public class TestBed {
 
 	private final static String COMPILE_COMMAND = "javac -d MutEx_using_Token_and_Quorums/bin/ MutEx_using_Token_and_Quorums/src/com/*/*/*.java";
 	private final static String EXECUTE_COMMAND= "java -cp .:MutEx_using_Token_and_Quorums/bin/ com.aos.testbed.Test";
-	private final static int TOTAL_NUMBER_OF_NODES = 16;
+	private final static int TOTAL_NUMBER_OF_NODES = 4;
 	private final static String SERVER_ADDRESS_PREFIX = "net";
 	private final static String SERVER_ADDRESS_SUFFIX = ".utdallas.edu";
 	private final static String COMMAND_TO_UNIX = "exec";
@@ -50,8 +50,7 @@ public class TestBed {
 		    	  	System.out.print("Please configure the Node Settings File");
 		    	  	return;
 		    	  }
-		      
-		      
+		    
 		      NodeSetting[] nodeSettings = gson.fromJson(getBufferedReader(CONFIG_FILEPATH), NodeSetting[].class);
 		      
 		      for(int i=1;i<= TOTAL_NUMBER_OF_NODES;i++)

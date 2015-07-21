@@ -26,7 +26,7 @@ public class Test
 
 		System.out.println("Initiating Sequence");
 		TestServer node1Server = new TestServer(myNodeId,sharedQueue,myQuorum,Token);
-		TestClient node1Client = new TestClient(myNodeId,sharedQueue,myQuorum,Token);
+		TestClient node1Client = new TestClient(myNodeId,sharedQueue,myQuorum,Token,requestTime);
 		
 		
 		node1Server.start();
