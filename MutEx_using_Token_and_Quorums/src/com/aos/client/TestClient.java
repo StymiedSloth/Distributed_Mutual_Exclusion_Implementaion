@@ -3,6 +3,7 @@ import java.net.MalformedURLException;
 import java.rmi.Naming;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
+import java.util.Queue;
 import java.util.concurrent.PriorityBlockingQueue;
 
 import com.aos.common.MessagePassing;
@@ -18,6 +19,7 @@ public class TestClient implements Runnable
 	private Boolean token;
 	private int requestTime;
 	private static int timestamp = 0;
+	private PriorityBlockingQueue<Integer> requestTimestampQueue; 
 	
 	public TestClient(int myNodeID,PriorityBlockingQueue<QueueObject> queue,int[] quorum,Boolean token,int requestTime) {
 		this.myNodeID = myNodeID;
@@ -25,6 +27,8 @@ public class TestClient implements Runnable
 		this.quorum = quorum;
 		this.token = token;
 		this.requestTime = requestTime;
+		requestTimestampQueue = new PriorityBlockingQueue<Integer>();
+		requestTimestampQueue.add(requestTime);
 	}
 	
 	public static int getTimeStamp(){
@@ -42,8 +46,9 @@ public class TestClient implements Runnable
 		while (true) {
 			try 
 			{			
-				if(requestTime <= getTimeStamp())
+				if(!requestTimestampQueue.isEmpty() && requestTimestampQueue.peek() <= getTimeStamp())
 				{
+					requestTimestampQueue.poll();
 					System.out.println(myNodeID +"'s timestamp is " +  getTimeStamp());
 					MessagePassing stub;
 					stub = (MessagePassing) Naming.lookup("rmi://net"+String.format("%02d",myNodeID)+".utdallas.edu:5001/mutex");

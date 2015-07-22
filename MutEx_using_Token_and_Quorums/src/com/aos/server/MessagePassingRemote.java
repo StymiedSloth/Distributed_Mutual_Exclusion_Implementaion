@@ -323,8 +323,24 @@ public class MessagePassingRemote extends UnicastRemoteObject implements Message
 	@Override
 	public void releaseCriticalSection() throws RemoteException 
 	{
-		System.out.println("Critical Section release of " + myNodeID);
+		System.out.println("Just Before Critical Section release of " + myNodeID);
 
+		for(QueueObject q : queue)
+		{
+			System.out.println(q.getTimestamp() + " " + q.getSender());
+		}
+		//TODO: check for the remove object.
+		//Dequeue my own request from my queue.
+		//queue.remove(new QueueObject(timestamp, myNodeID));
+		
+		for(QueueObject q : queue)
+		{
+			if(q.getTimestamp()== timestamp && q.getSender()==myNodeID)
+				queue.remove(q);
+		}
+		
+		criticalSection = false;		
+		System.out.println("Just After Critical Section release of " + myNodeID);
 		for(QueueObject q : queue)
 		{
 			System.out.println(q.getTimestamp() + " " + q.getSender());
@@ -356,22 +372,6 @@ public class MessagePassingRemote extends UnicastRemoteObject implements Message
 				}
 			}
 		}
-		
-		//TODO: check for the remove object.
-		//Dequeue my own request from my queue.
-		//queue.remove(new QueueObject(timestamp, myNodeID));
-		
-		for(QueueObject q : queue)
-		{
-			if(q.getTimestamp()== timestamp && q.getSender()==myNodeID)
-				queue.remove(q);
-		}
-		
-		criticalSection = false;		
-	
-		for(QueueObject q : queue)
-		{
-			System.out.println(q.getTimestamp() + " " + q.getSender());
-		}
+
 	}
 }
