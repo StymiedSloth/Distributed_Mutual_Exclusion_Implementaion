@@ -95,7 +95,6 @@ public class MessagePassingRemote extends UnicastRemoteObject implements Message
 				if(q.getTimestamp()==this.timestamp && q.getSender()==myNodeID)
 					queue.remove(q);
 			}
-			
 			releaseCriticalSection();
 			System.out.println("Release Critical Section " + myNodeID);
 			System.out.println("My queue after release message sent");
@@ -103,7 +102,9 @@ public class MessagePassingRemote extends UnicastRemoteObject implements Message
 			{
 				System.out.println(q.getTimestamp() + " " + q.getSender());
 			}
-					
+			
+			criticalSection = false;	
+			
 			return;
 
 		}
