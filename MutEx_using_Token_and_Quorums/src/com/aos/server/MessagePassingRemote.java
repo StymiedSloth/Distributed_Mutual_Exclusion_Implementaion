@@ -4,6 +4,8 @@ import java.rmi.Naming;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.server.*;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.concurrent.PriorityBlockingQueue;
 
 import com.aos.client.TestClient;
@@ -48,13 +50,6 @@ public class MessagePassingRemote extends UnicastRemoteObject implements Message
 	}
 
 	@Override
-	public void MessagePass(int sender, String message) throws RemoteException
-	{
-		System.out.println("Message got from:" + sender);
-		System.out.println("Message is " + message);
-	}
-
-	@Override
 	public void sendRequest(int timestamp, int sender) throws RemoteException 
 	{
 		this.timestamp = timestamp + 1;
@@ -67,7 +62,9 @@ public class MessagePassingRemote extends UnicastRemoteObject implements Message
 		if(!queue.contains(queueObject))
 			queue.add(queueObject);
 		
-		System.out.println("Queue at timestamp  " +timestamp + "is ");
+		Calendar cal = Calendar.getInstance();
+		SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
+		System.out.println(""+ sdf.format(cal.getTime()) + ":: Queue at timestamp  " +timestamp + "is ");
 		for(QueueObject q : queue)
 		{
 			System.out.println(q.getTimestamp() + " " + q.getSender());
@@ -77,7 +74,7 @@ public class MessagePassingRemote extends UnicastRemoteObject implements Message
 		
 		if(obj.getSender() == myNodeID && token == true)
 		{
-			System.out.println("Enter Critical Section " + myNodeID);
+		System.out.println(""+ sdf.format(cal.getTime()) + ":: Enter Critical Section " + myNodeID);
 			criticalSection = true;
 			token = true;
 			try
@@ -96,15 +93,16 @@ public class MessagePassingRemote extends UnicastRemoteObject implements Message
 					queue.remove(q);
 			}
 			
-			System.out.println("Release Critical Section " + myNodeID);
-			System.out.println("My queue after release message sent");
+			System.out.println(""+ sdf.format(cal.getTime()) + ":: Release Critical Section " + myNodeID);			
+			System.out.println(""+ sdf.format(cal.getTime()) + ":: My queue after release message sent");
+
 			for(QueueObject q : queue)
 			{
 				System.out.println(q.getTimestamp() + " " + q.getSender());
 			}
 			
-			criticalSection = false;	
-			
+			releaseCriticalSection();
+
 			return;
 
 		}
@@ -115,7 +113,7 @@ public class MessagePassingRemote extends UnicastRemoteObject implements Message
 				MessagePassing stub;
 				try 
 				{
-					System.out.println("I " + sender  +" am sending a request to my quorum member " + QuorumMember);
+					System.out.println(""+ sdf.format(cal.getTime()) + ":: I " + sender  +" am sending a request to my quorum member " + QuorumMember);
 					if(requestMessageSent[QuorumMember] == false)
 					{
 						requestMessageSent[QuorumMember] = true;
@@ -139,13 +137,15 @@ public class MessagePassingRemote extends UnicastRemoteObject implements Message
 	public void receiveRequest(int timestamp, int sender)
 			throws RemoteException
 	{
-		System.out.println("Message Recieved to " + myNodeID + " from " + sender);
+		Calendar cal = Calendar.getInstance();
+		SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
+		System.out.println(""+ sdf.format(cal.getTime()) + ":: I have Recieved a request from " + sender);
 		
 		if(!queue.contains(new QueueObject(timestamp, sender)))
 			queue.add(new QueueObject(timestamp, sender));
 		
 		requestMessageReceived[sender] = true;
-		
+		System.out.println(""+ sdf.format(cal.getTime()) + ":: My Queue after receive request");
 		for(QueueObject q : queue)
 		{
 			System.out.println(q.getTimestamp() + " " + q.getSender());
@@ -164,7 +164,7 @@ public class MessagePassingRemote extends UnicastRemoteObject implements Message
 				//TODO DIsucss with team - This might be an issue, since any asker will get the token, we 
 				//have to dequeue the first request from queue and only then send it out. 
 				token = false;
-				System.out.println("Token send to" + sender);
+				System.out.println(""+ sdf.format(cal.getTime()) + ":: I have token and I am not in CS => Token sent to " + sender);
 				stub = (MessagePassing) Naming.lookup("rmi://net"+String.format("%02d",sender)+".utdallas.edu:5001/mutex");
 				stub.receiveToken(myNodeID);
 				
@@ -184,6 +184,8 @@ public class MessagePassingRemote extends UnicastRemoteObject implements Message
 					MessagePassing stub;
 					try 
 					{
+						System.out.println(""+ sdf.format(cal.getTime()) + ":: I don't have token for receive request by "+ sender
+								+" => I ask my quorum members using AskToken");
 						stub = (MessagePassing) Naming.lookup("rmi://net"+String.format("%02d",QuorumMember)+".utdallas.edu:5001/mutex");
 						stub.askToken(timestamp, myNodeID);
 					} 
@@ -198,13 +200,16 @@ public class MessagePassingRemote extends UnicastRemoteObject implements Message
 				}
 			}
 		}
-		System.out.println("Exited from recieve Request from " + sender);
+		System.out.println(""+ sdf.format(cal.getTime()) + ":: Exited from recieve Request from " + sender);
 	}
 
 	@Override
 	public void askToken(int timestamp, int sender) throws RemoteException
 	{
-		System.out.println("Ask Token Recieved to " + myNodeID + " from " + sender);
+		Calendar cal = Calendar.getInstance();
+		SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
+		System.out.println(""+ sdf.format(cal.getTime()) + ":: I have been asked for the Token by" + sender
+				+ " my token state is " + token);
 		
 		if(token && !criticalSection)
 		{			
@@ -226,7 +231,10 @@ public class MessagePassingRemote extends UnicastRemoteObject implements Message
 	@Override
 	public void receiveToken(int sender) throws RemoteException 
 	{
-		System.out.println("My id is "+ myNodeID +" I have the token from " + sender);
+		Calendar cal = Calendar.getInstance();
+		SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
+		System.out.println(""+ sdf.format(cal.getTime()) + ":: My id is "+ myNodeID +" I have received token from " + sender
+				+ " and below is my queue");
 		
 		for(QueueObject q : queue)
 		{
@@ -241,6 +249,8 @@ public class MessagePassingRemote extends UnicastRemoteObject implements Message
 			 
 			if(TokenRequestor == myNodeID)
 			{
+				System.out.println(""+ sdf.format(cal.getTime()) + ":: I will now enter my Critical section since I am the"
+						+ "first requestor in the queue");
 				criticalSection = true;
 				token = true;
 				try
@@ -260,6 +270,7 @@ public class MessagePassingRemote extends UnicastRemoteObject implements Message
 			try 
 			{
 				token = false;
+				System.out.println(""+ sdf.format(cal.getTime()) + ":: I will pass the token to the next requestor who is "+ TokenRequestor);
 				stub = (MessagePassing) Naming.lookup("rmi://net"+String.format("%02d",TokenRequestor)+".utdallas.edu:5001/mutex");
 				stub.receiveToken(myNodeID);
 				
@@ -269,12 +280,11 @@ public class MessagePassingRemote extends UnicastRemoteObject implements Message
 				e.printStackTrace();
 			}
 		}
-		
-		System.out.println("Exited from Recieve Token " + sender);
+		System.out.println(""+ sdf.format(cal.getTime()) + ":: Exited from Recieve Token " + sender);
 	}
 
 	@Override
-	public void receiveReleaseMessage(int timestamp, int sender)
+	public void receiveReleaseMessage(int timestampReceived, int sender)
 			throws RemoteException {
 		
 		while(requestMessageReceived[sender] == false);
@@ -285,22 +295,25 @@ public class MessagePassingRemote extends UnicastRemoteObject implements Message
 		
 		for(QueueObject q : queue)
 		{
-			if(q.getTimestamp()== timestamp && q.getSender()==sender)
+			if(q.getTimestamp()== timestampReceived && q.getSender()==sender)
 				queue.remove(q);
 		}
 		
-		System.out.println("My id is "+ myNodeID +" I have received a release msg from " + sender);
+		Calendar cal = Calendar.getInstance();
+		SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
+		System.out.println(""+ sdf.format(cal.getTime()) + ":: I have received a release msg from " + sender
+				+ " and below is my queue");
 		
 		for(QueueObject q : queue)
 		{
 			System.out.println(q.getTimestamp() + " " + q.getSender());
 		}
 		
-		this.timestamp = Math.max(this.timestamp , timestamp);
-		TestClient.setTimestamp(timestamp);
-
-		QueueObject queueObject = new QueueObject(timestamp, sender);
-		int tokenHolder = queueObject.getSender();
+		this.timestamp = Math.max(this.timestamp , timestampReceived);
+		TestClient.setTimestamp(this.timestamp);
+		System.out.println( "**Timestamp maxxed " +TestClient.getTimeStamp());
+//		QueueObject queueObject = new QueueObject(timestamp, sender);
+//		int tokenHolder = queueObject.getSender();
 		
 		if(queue.size() > 0)
 		{
@@ -308,7 +321,9 @@ public class MessagePassingRemote extends UnicastRemoteObject implements Message
 			MessagePassing stub;
 			try 
 			{
-				stub = (MessagePassing) Naming.lookup("rmi://net"+String.format("%02d",tokenHolder)+".utdallas.edu:5001/mutex");
+				System.out.println(""+ sdf.format(cal.getTime()) + ":: Since there are"
+						+ " more requests in queue, I will ask token from " + sender + " and send it to " + nextRequestorInQueue.getSender());
+				stub = (MessagePassing) Naming.lookup("rmi://net"+String.format("%02d",sender)+".utdallas.edu:5001/mutex");
 				stub.askToken( nextRequestorInQueue.getTimestamp() , nextRequestorInQueue.getSender());
 			}
 			catch (MalformedURLException | NotBoundException e)
@@ -317,13 +332,16 @@ public class MessagePassingRemote extends UnicastRemoteObject implements Message
 			}
 		}
 		
-		System.out.println("Exited from Release from " + sender);
+		System.out.println(""+ sdf.format(cal.getTime()) + ":: Exited from Release from " + sender);
 	}
 	
 	@Override
 	public void releaseCriticalSection() throws RemoteException 
 	{
-		System.out.println("Just Before Critical Section release of " + myNodeID);
+		Calendar cal = Calendar.getInstance();
+		SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
+		System.out.println(""+ sdf.format(cal.getTime()) + ":: My id is "+ myNodeID +" I am releasing my critical section ");
+		System.out.println(""+ sdf.format(cal.getTime()) + ":: Just Before Critical Section release of " + myNodeID);
 
 		for(QueueObject q : queue)
 		{
@@ -340,7 +358,7 @@ public class MessagePassingRemote extends UnicastRemoteObject implements Message
 		}
 		
 		criticalSection = false;		
-		System.out.println("Just After Critical Section release of " + myNodeID);
+		System.out.println(""+ sdf.format(cal.getTime()) + ":: Just After Critical Section release of " + myNodeID);
 		for(QueueObject q : queue)
 		{
 			System.out.println(q.getTimestamp() + " " + q.getSender());

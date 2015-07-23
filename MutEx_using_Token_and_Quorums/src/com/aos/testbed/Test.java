@@ -24,9 +24,13 @@ public class Test
 
 		int[] myQuorum = findQuorum(myNodeId, totalNumberOfNodes);
 
-		System.out.println("Initiating Sequence");
+		System.out.println("Initiating Sequence with my quorum");
+		for (int i = 0; i < myQuorum.length; i++) {
+			System.out.print(myQuorum[i] + " ");
+		}
+		System.out.println();
 		TestServer node1Server = new TestServer(myNodeId,sharedQueue,myQuorum,Token);
-		TestClient node1Client = new TestClient(myNodeId,sharedQueue,myQuorum,Token,requestTime-1);
+		TestClient node1Client = new TestClient(myNodeId,sharedQueue,myQuorum,Token,requestTime);
 		
 		
 		node1Server.start();

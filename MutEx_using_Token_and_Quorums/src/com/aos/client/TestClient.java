@@ -3,6 +3,8 @@ import java.net.MalformedURLException;
 import java.rmi.Naming;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Queue;
 import java.util.concurrent.PriorityBlockingQueue;
 
@@ -42,20 +44,24 @@ public class TestClient implements Runnable
 	@Override
 	public void run() 
 	{
-		System.out.println("Client Thread start " + myNodeID + " with " + quorum.length);
+		Calendar cal = Calendar.getInstance();
+		SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
+		System.out.println("Time: "+ sdf.format(cal.getTime()) + ":: Client Thread start " + myNodeID + " with " + quorum.length);
 		while (true) {
 			try 
 			{			
 				if(!requestTimestampQueue.isEmpty() && requestTimestampQueue.peek() <= getTimeStamp())
 				{
+					System.out.println("Time: "+ sdf.format(cal.getTime()) + ":: Current timestamp is " +  getTimeStamp()
+					+ " compared to " + requestTimestampQueue.peek() + " at " + myNodeID );
 					requestTimestampQueue.poll();
-					System.out.println(myNodeID +"'s timestamp is " +  getTimeStamp());
 					MessagePassing stub;
 					stub = (MessagePassing) Naming.lookup("rmi://net"+String.format("%02d",myNodeID)+".utdallas.edu:5001/mutex");
-					stub.sendRequest(requestTime, myNodeID);
+					stub.sendRequest(requestTime-1, myNodeID);
 				}
 				Thread.sleep(15000);
 				setTimestamp(getTimeStamp() + 1);
+				System.out.println("**Timestamp increment " + getTimeStamp());
 			}
 			catch (RemoteException e) 
 			{
