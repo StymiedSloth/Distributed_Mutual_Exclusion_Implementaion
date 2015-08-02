@@ -101,7 +101,8 @@ public class MessagePassingRemote extends UnicastRemoteObject implements Message
 				System.out.println(q.getTimestamp() + " " + q.getSender());
 			}
 			
-			releaseCriticalSection();
+//			releaseCriticalSection();
+			criticalSection = false;
 
 			return;
 
