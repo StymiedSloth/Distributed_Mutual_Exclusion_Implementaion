@@ -51,7 +51,7 @@ public class TerminateThread implements Runnable {
 			
 			Channel channel=session.openChannel("exec");
 			
-			((ChannelExec)channel).setCommand("head -c -1 -q "  + files +"> a.txt");
+			((ChannelExec)channel).setCommand("head -c -1 -q "  + files +"> combined.txt");
 			channel.setInputStream(null);
 			((ChannelExec) channel).setErrStream(System.err);
 			InputStream ins = channel.getInputStream();
