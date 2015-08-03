@@ -63,7 +63,7 @@ public class TerminateThread implements Runnable {
 			sftpchannel.connect();
 			sftpchannel.cd("/home/004/v/vd/vdr140330/");
 
-			InputStream in = sftpchannel.get("a.txt");
+			InputStream in = sftpchannel.get("combined.txt");
 			BufferedReader br = new BufferedReader(new InputStreamReader(in));
 			String line;
             while ((line = br.readLine()) != null || !channel.isClosed()) {
