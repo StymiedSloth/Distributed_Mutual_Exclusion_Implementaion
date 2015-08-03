@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.concurrent.PriorityBlockingQueue;
+
 import com.aos.common.HandlerQueueObject;
 import com.aos.common.QueueObject;
 import com.sun.nio.sctp.MessageInfo;
@@ -39,17 +40,21 @@ public class TestServer implements Runnable
 			try
 			{
 				SctpServerChannel sctpServerChannel = SctpServerChannel.open();
-				InetSocketAddress serverAddr = new InetSocketAddress(6000);
+				InetSocketAddress serverAddr = new InetSocketAddress(6500 + Integer.parseInt(String.format("%02d",myNodeID)));
+				
 				sctpServerChannel.bind(serverAddr);			
 				while(true)
 				{
 					SctpChannel sctpChannel = sctpServerChannel.accept();
 					MessageInfo messageInfo = sctpChannel.receive(byteBuffer,null,null);
-					System.out.println(messageInfo);
+					//System.out.println(messageInfo);
 					message = byteToString(byteBuffer);
-					System.out.println(message);
-					String[] splits = message.split("|");
-					HandlerQueueObject handlerQueueObject = new HandlerQueueObject(splits[0], splits[3], Integer.parseInt(splits[2]), Integer.parseInt(splits[3]),Integer.parseInt(splits[4]));
+					byteBuffer.flip();
+					String[] splits = message.split(",");
+					System.out.println("Received and queued request : (execute,"+ splits[1] + "," + splits[2] +"," + splits[3]+ "," + splits[4] + ")");
+					//System.out.println(message);
+					HandlerQueueObject handlerQueueObject = new HandlerQueueObject("execute", splits[1].trim() , Integer.parseInt(splits[2].trim()), Integer.parseInt((splits[3].trim()).substring(0,1)),
+							Integer.parseInt((splits[4].trim()).substring(0,1)));
 					handlerQueue.add(handlerQueueObject);
 				}
 

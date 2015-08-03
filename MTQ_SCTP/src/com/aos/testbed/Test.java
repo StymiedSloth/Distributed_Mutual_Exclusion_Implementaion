@@ -5,6 +5,7 @@ import java.util.concurrent.PriorityBlockingQueue;
 import com.aos.client.TestClient;
 import com.aos.common.HandlerQueueObject;
 import com.aos.common.QueueObject;
+import com.aos.handler.Handler;
 import com.aos.server.TestServer;
 
 public class Test 
@@ -33,8 +34,9 @@ public class Test
 		System.out.println();
 		TestServer node1Server = new TestServer(myNodeId,sharedQueue,handlerQueue,myQuorum,Token);
 		TestClient node1Client = new TestClient(myNodeId,sharedQueue,handlerQueue,myQuorum,Token,requestTime);
+		Handler handler = new Handler(myNodeId, sharedQueue, handlerQueue, myQuorum, Token);
 		
-		
+		handler.start();
 		node1Server.start();
 
 		try

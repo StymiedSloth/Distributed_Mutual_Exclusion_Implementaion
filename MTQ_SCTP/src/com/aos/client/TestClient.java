@@ -59,11 +59,12 @@ public class TestClient implements Runnable
 			if(!requestTimestampQueue.isEmpty() && requestTimestampQueue.peek() <= getTimeStamp())
 			{
 				requestTimestampQueue.poll();
-				HandlerQueueObject handlerQueueObject = new HandlerQueueObject("client","sendrequest", requestTime-1, myNodeID, myNodeID);
+				HandlerQueueObject handlerQueueObject = new HandlerQueueObject("execute","sendrequest", requestTime-1, myNodeID, myNodeID);
+				System.out.println("Queued request : (execute,sendrequest," + (requestTime-1) +"," + myNodeID + "," + myNodeID + ")");
 				handlerQueue.add(handlerQueueObject);
 			}
 			try {
-				Thread.sleep(15000);
+				Thread.sleep(5000);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}

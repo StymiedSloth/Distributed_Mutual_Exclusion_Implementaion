@@ -3,18 +3,37 @@ package com.aos.handler;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.io.*;
 import java.net.*;
+
 import com.sun.nio.sctp.*;
+
 import java.nio.*;
+
+import com.aos.common.Functions;
 import com.aos.common.HandlerQueueObject;
 import com.aos.common.QueueObject;
 
 public class Handler implements Runnable{
 
 	Thread t;
-	private PriorityBlockingQueue<HandlerQueueObject> handlerQueue;	
+		
+	private int myNodeID;
+	private PriorityBlockingQueue<QueueObject> queue;
+	private PriorityBlockingQueue<HandlerQueueObject> handlerQueue;
+	private int[] quorum;
+	private Boolean token;
+	private static int timestamp = 0;
+	private Functions functions;
+	private Boolean[] hasAddressAlreadyBeenCreated = new Boolean[20];
 	
-	public Handler(PriorityBlockingQueue<HandlerQueueObject> handlerQueue) {
+	public Handler(int myNodeID,PriorityBlockingQueue<QueueObject> queue,PriorityBlockingQueue<HandlerQueueObject> handlerQueue,
+			int[] quorum,Boolean token) {
+		this.myNodeID = myNodeID;
+		this.queue = queue;		
 		this.handlerQueue = handlerQueue;
+		this.quorum = quorum;
+		this.token = token;
+		functions = new Functions(myNodeID,queue,handlerQueue,quorum,token);
+		
 	}
 	
 	@Override
@@ -24,39 +43,58 @@ public class Handler implements Runnable{
 			if(handlerQueue.size() > 0)
 			{
 				HandlerQueueObject handlerQueueObject = handlerQueue.poll();
-				String params = handlerQueueObject.getRequestFrom() + "|";
-				params += handlerQueueObject.getMethod() + "|";
-				params += handlerQueueObject.getSender() + "|";
-				params += handlerQueueObject.getTimestamp();
-				sendMessage(params);
+				String whatToDo = handlerQueueObject.getRequestFrom();
+				String method = handlerQueueObject.getMethod();
+				int timestamp = handlerQueueObject.getTimestamp(); 
+				int sender = handlerQueueObject.getSender();
+				int receiver = handlerQueueObject.getReceiver();
+				System.out.println("Handling Queued request : (" + whatToDo + ","+method + "," + timestamp +"," + sender + "," + receiver + ")");
+				if(whatToDo.equals("send"))
+					sendMessage(whatToDo,method,timestamp,sender,receiver);
+				else
+					executeAppropriateFunction(method, timestamp, sender, receiver);
+					
 			}
 		}
 
 	}
 	
+	private void executeAppropriateFunction(String method, int timestamp, int sender, int receiver) {
+		if(method.equals("sendrequest"))
+			functions.sendRequest(timestamp, sender);
+		else if(method.equals("receiverequest"))
+			functions.receiveRequest(timestamp, sender);
+		else if(method.equals("asktoken"))
+			functions.askToken(timestamp, sender);
+		else if(method.equals("receivetoken"))
+			functions.receiveToken(sender);
+		else if(method.equals("receiveReleaseMessage"))
+			functions.receiveReleaseMessage(timestamp, sender);
+	}
+
 	public static final int MESSAGE_SIZE = 100;
-	public void sendMessage(String params)
+	public void sendMessage(String whatToDO, String method, int timestamp, int sender,int receiver)
 	{
+		String params = whatToDO + "," + method + "," + timestamp + "," + sender +"," + receiver;
 		//Buffer to hold messages in byte format
 		ByteBuffer byteBuffer = ByteBuffer.allocate(MESSAGE_SIZE);		
 		try
 		{
-			//Create a socket address for  server at net01 at port 5000
-			SocketAddress socketAddress = new InetSocketAddress("net01.utdallas.edu",6000);
-			//Open a channel. NOT SERVER CHANNEL
+			if(hasAddressAlreadyBeenCreated[receiver] == null)
+				hasAddressAlreadyBeenCreated[receiver] = false;
+			SocketAddress socketAddress = new InetSocketAddress("net"+ String.format("%02d",receiver) +".utdallas.edu",(6500 + Integer.parseInt(String.format("%02d",receiver))));
 			SctpChannel sctpChannel = SctpChannel.open();
-			//Bind the channel's socket to a local port. Again this is not a server bind
-			sctpChannel.bind(new InetSocketAddress(5000));
-			//Connect the channel's socket to  the remote server
+			if(!hasAddressAlreadyBeenCreated[receiver])
+			{
+				sctpChannel.bind(new InetSocketAddress(6500 + Integer.parseInt(String.format("%02d",receiver))));
+				hasAddressAlreadyBeenCreated[receiver] = true;
+			}
 			sctpChannel.connect(socketAddress);
-			//Before sending messages add additional information about the message
 			MessageInfo messageInfo = MessageInfo.createOutgoing(null,0);
-			//convert the string message into bytes and put it in the byte buffer
 			byteBuffer.put(params.getBytes());
-			//Reset a pointer to point to the start of buffer 
 			byteBuffer.flip();
-			//Send a message in the channel (byte format)
 			sctpChannel.send(byteBuffer,messageInfo);
+			sctpChannel.close();
 		}
 		catch(IOException ex)
 		{
