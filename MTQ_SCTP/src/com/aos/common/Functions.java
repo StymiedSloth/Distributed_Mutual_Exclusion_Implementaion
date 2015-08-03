@@ -1,5 +1,10 @@
 package com.aos.common;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.sql.Timestamp;
 import java.util.concurrent.PriorityBlockingQueue;
 
 import com.aos.client.TestClient;
@@ -13,9 +18,10 @@ public class Functions
 	private Boolean token;
 	private Boolean criticalSection;
 	private int timestamp;
+	private BufferedWriter writer;
 	
 	public Functions(int myNodeID,PriorityBlockingQueue<QueueObject> queue,PriorityBlockingQueue<HandlerQueueObject> handlerQueue,
-			int[] quorum, Boolean token)
+			int[] quorum, Boolean token) throws IOException
 	{
 		this.myNodeID = myNodeID;
 		this.queue = queue;
@@ -25,7 +31,7 @@ public class Functions
 		this.criticalSection = false;
 	}
 
-	public void sendRequest(int receivedTimestamp, int sender)
+	public void sendRequest(int receivedTimestamp, int sender) throws IOException
 	{
 		System.out.println("Executing Send Request");
 		this.timestamp = receivedTimestamp + 1;
@@ -40,6 +46,11 @@ public class Functions
 		if(obj.getSender() == myNodeID && token == true)
 		{
 			System.out.println("I have token so I exnter Critical Section");
+			
+			writer = new BufferedWriter( new FileWriter( myNodeID +".txt"));
+			writer.write("\n" + new Timestamp(System.currentTimeMillis()) +
+					"\nNode " + myNodeID + " Enters; ");
+			
 			criticalSection = true;
 			token = true;
 			try
@@ -57,6 +68,9 @@ public class Functions
 			}
 			criticalSection = false;
 			System.out.println("Exit my Critical Section");
+			
+			writer.write("Node " + myNodeID + " Exits;\n");
+			writer.close();
 			return;
 
 		}
@@ -108,7 +122,7 @@ public class Functions
 	}
 
 
-	public void receiveToken(int sender)
+	public void receiveToken(int sender) throws IOException
 	{
 		if(!queue.isEmpty())
 		{
@@ -119,6 +133,9 @@ public class Functions
 				System.out.println("RToken: I am the requestor for token, I enter my CS");
 				criticalSection = true;
 				token = true;
+				writer = new BufferedWriter( new FileWriter( myNodeID +".txt"));
+				writer.write("\n" +new Timestamp(System.currentTimeMillis()) +
+						"\nNode " + myNodeID + " Enters; ");
 				try
 				{
 					Thread.sleep(500);
@@ -127,6 +144,8 @@ public class Functions
 					e.printStackTrace();
 				}
 				System.out.println("RToken: I am done with my CS, calling release critical section");
+				writer.write("Node " + myNodeID + " Exits;\n");
+				writer.close();
 				releaseCriticalSection();
 				
 				return;
@@ -171,7 +190,8 @@ public class Functions
 				queue.remove(q);
 		}
 		
-		criticalSection = false;		
+		criticalSection = false;	
+		
 		System.out.println("RCriticalSection: I dequeued myself, sending release messsages to all");
 		for(int QuorumMember : quorum)
 		{

@@ -1,5 +1,6 @@
 package com.aos.testbed;
 
+import java.io.IOException;
 import java.util.concurrent.PriorityBlockingQueue;
 
 import com.aos.client.TestClient;
@@ -24,31 +25,27 @@ public class Test
 		totalNumberOfNodes = Integer.parseInt(args[1]);
 		requestTime = Integer.parseInt(args[2]);
 		Token = Boolean.parseBoolean(args[3]);
-
+		
 		int[] myQuorum = findQuorum(myNodeId, totalNumberOfNodes);
+		try {
+			System.out.println("Initiating Sequence with my quorum");
+			for (int i = 0; i < myQuorum.length; i++) {
+				System.out.print(myQuorum[i] + " ");
+			}
+			System.out.println();
+			TestServer node1Server = new TestServer(myNodeId,sharedQueue,handlerQueue,myQuorum,Token);
+			TestClient node1Client = new TestClient(myNodeId,sharedQueue,handlerQueue,myQuorum,Token,requestTime);
+			Handler handler = new Handler(myNodeId, sharedQueue, handlerQueue, myQuorum, Token);
+			
+			handler.start();
+			node1Server.start();
 
-		System.out.println("Initiating Sequence with my quorum");
-		for (int i = 0; i < myQuorum.length; i++) {
-			System.out.print(myQuorum[i] + " ");
-		}
-		System.out.println();
-		TestServer node1Server = new TestServer(myNodeId,sharedQueue,handlerQueue,myQuorum,Token);
-		TestClient node1Client = new TestClient(myNodeId,sharedQueue,handlerQueue,myQuorum,Token,requestTime);
-		Handler handler = new Handler(myNodeId, sharedQueue, handlerQueue, myQuorum, Token);
-		
-		handler.start();
-		node1Server.start();
-
-		try
-		{
 			Thread.sleep(5*1000);
+			
+			node1Client.start();
+		} catch (InterruptedException | IOException e) {
+			e.printStackTrace();
 		}
-		catch(Exception ex)
-		{
-			System.out.println(ex);
-		}
-		
-		node1Client.start();
 	}
 	
 	private static int[] findQuorum(int myNodeId,int quorumSize)

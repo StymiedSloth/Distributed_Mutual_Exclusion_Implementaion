@@ -26,14 +26,14 @@ public class Handler implements Runnable{
 	private Boolean[] hasAddressAlreadyBeenCreated = new Boolean[20];
 	
 	public Handler(int myNodeID,PriorityBlockingQueue<QueueObject> queue,PriorityBlockingQueue<HandlerQueueObject> handlerQueue,
-			int[] quorum,Boolean token) {
+			int[] quorum,Boolean token) throws IOException {
 		this.myNodeID = myNodeID;
 		this.queue = queue;		
 		this.handlerQueue = handlerQueue;
 		this.quorum = quorum;
 		this.token = token;
-		functions = new Functions(myNodeID,queue,handlerQueue,quorum,token);
 		
+		functions = new Functions(myNodeID,queue,handlerQueue,quorum,token);
 	}
 	
 	@Override
@@ -42,24 +42,32 @@ public class Handler implements Runnable{
 		while (true) {		
 			if(handlerQueue.size() > 0)
 			{
-				HandlerQueueObject handlerQueueObject = handlerQueue.poll();
-				String whatToDo = handlerQueueObject.getRequestFrom();
-				String method = handlerQueueObject.getMethod();
-				int timestamp = handlerQueueObject.getTimestamp(); 
-				int sender = handlerQueueObject.getSender();
-				int receiver = handlerQueueObject.getReceiver();
-				System.out.println("Handling Queued request : (" + whatToDo + ","+method + "," + timestamp +"," + sender + "," + receiver + ")");
-				if(whatToDo.equals("send"))
-					sendMessage(whatToDo,method,timestamp,sender,receiver);
-				else
-					executeAppropriateFunction(method, timestamp, sender, receiver);
+				try
+				{
+					
+					HandlerQueueObject handlerQueueObject = handlerQueue.poll();
+					String whatToDo = handlerQueueObject.getRequestFrom();
+					String method = handlerQueueObject.getMethod();
+					int timestamp = handlerQueueObject.getTimestamp(); 
+					int sender = handlerQueueObject.getSender();
+					int receiver = handlerQueueObject.getReceiver();
+					System.out.println("Handling Queued request : (" + whatToDo + ","+method + "," + timestamp +"," + sender + "," + receiver + ")");
+					if(whatToDo.equals("send"))
+						sendMessage(whatToDo,method,timestamp,sender,receiver);
+					else
+						executeAppropriateFunction(method, timestamp, sender, receiver);
+				}
+				catch(Exception ex)
+				{
+					ex.printStackTrace();
+				}
 					
 			}
 		}
 
 	}
 	
-	private void executeAppropriateFunction(String method, int timestamp, int sender, int receiver) {
+	private void executeAppropriateFunction(String method, int timestamp, int sender, int receiver) throws IOException {
 		if(method.equals("sendrequest"))
 			functions.sendRequest(timestamp, sender);
 		else if(method.equals("receiverequest"))
