@@ -84,6 +84,7 @@ public class Handler implements Runnable{
 	public void sendMessage(String whatToDO, String method, int timestamp, int sender,int receiver)
 	{
 		String params = whatToDO + "," + method + "," + timestamp + "," + sender +"," + receiver;
+		params = params.length() + "," + params;
 		//Buffer to hold messages in byte format
 		ByteBuffer byteBuffer = ByteBuffer.allocate(MESSAGE_SIZE);		
 		try
@@ -102,6 +103,7 @@ public class Handler implements Runnable{
 			byteBuffer.put(params.getBytes());
 			byteBuffer.flip();
 			sctpChannel.send(byteBuffer,messageInfo);
+			byteBuffer.clear();
 			sctpChannel.close();
 		}
 		catch(IOException ex)

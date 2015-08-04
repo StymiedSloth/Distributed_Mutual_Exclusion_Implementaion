@@ -6,6 +6,9 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.sql.Timestamp;
 import java.util.concurrent.PriorityBlockingQueue;
+import java.util.logging.FileHandler;
+import java.util.logging.Logger;
+import java.util.logging.SimpleFormatter;
 
 import com.aos.client.TestClient;
 
@@ -19,6 +22,8 @@ public class Functions
 	private Boolean criticalSection;
 	private int timestamp;
 	private BufferedWriter writer;
+	Logger logger = Logger.getLogger("MyFuncLog"); 
+	FileHandler fh;
 	
 	public Functions(int myNodeID,PriorityBlockingQueue<QueueObject> queue,PriorityBlockingQueue<HandlerQueueObject> handlerQueue,
 			int[] quorum, Boolean token) throws IOException
@@ -29,11 +34,16 @@ public class Functions
 		this.quorum  = quorum;
 		this.token = token;
 		this.criticalSection = false;
+		fh = new FileHandler("MyFuncLogFile"+ myNodeID +".log");
+		logger.addHandler(fh);
+	    SimpleFormatter formatter = new SimpleFormatter();  
+        fh.setFormatter(formatter);
+        logger.setUseParentHandlers(false);
 	}
 
 	public void sendRequest(int receivedTimestamp, int sender) throws IOException
 	{
-		System.out.println("Executing Send Request");
+		logger.info("Executing Send Request");
 		this.timestamp = receivedTimestamp + 1;
 		
 		QueueObject queueObject = new QueueObject(this.timestamp, myNodeID);
@@ -45,7 +55,7 @@ public class Functions
 		
 		if(obj.getSender() == myNodeID && token == true)
 		{
-			System.out.println("I have token so I exnter Critical Section");
+			logger.info("I have token so I exnter Critical Section");
 			
 			writer = new BufferedWriter( new FileWriter( myNodeID +".txt"));
 			writer.write("\n" + new Timestamp(System.currentTimeMillis()) +
@@ -67,7 +77,7 @@ public class Functions
 					queue.remove(q);
 			}
 			criticalSection = false;
-			System.out.println("Exit my Critical Section");
+			logger.info("Exit my Critical Section");
 			
 			writer.write("Node " + myNodeID + " Exits;\n");
 			writer.close();
@@ -78,7 +88,7 @@ public class Functions
 		{
 			if(QuorumMember != myNodeID)
 			{
-				System.out.println("Don't have token, sending request to my quorum member " + QuorumMember);
+				logger.info("Don't have token, sending request to my quorum member " + QuorumMember);
 				handlerQueue.add(new HandlerQueueObject("send", "receiverequest", timestamp, sender, QuorumMember));
 			}
 		}		
@@ -86,7 +96,7 @@ public class Functions
 	
 	public void receiveRequest(int timestamp, int sender)			
 	{
-		System.out.println("RRequest: I have received a request from my quorum member " + sender);
+		logger.info("RRequest: I have received a request from my quorum member " + sender);
 		if(!queue.contains(new QueueObject(timestamp, sender)))
 			queue.add(new QueueObject(timestamp, sender));
 		
@@ -94,13 +104,13 @@ public class Functions
 		{	
 			QueueObject queueObject = queue.peek();			 
 			int TokenRequestor = queueObject.getSender();
-			System.out.println("RRequest:I have token and am not in CS so sending token to " + TokenRequestor);
+			logger.info("RRequest:I have token and am not in CS so sending token to " + TokenRequestor);
 			token = false;
 			handlerQueue.add(new HandlerQueueObject("send", "receivetoken", timestamp, myNodeID, TokenRequestor));
 		}
 		else if(!token)
 		{
-			System.out.println("RRequest:I don't have token so I ask my Quorum members");
+			logger.info("RRequest:I don't have token so I ask my Quorum members");
 			for(int QuorumMember : quorum)
 			{
 				if(QuorumMember != myNodeID && QuorumMember != sender)
@@ -115,7 +125,7 @@ public class Functions
 	{
 		if(token && !criticalSection)
 		{	
-			System.out.println("AskTOken: I have token and am not in CS so sending token to " +tokenRequestor);
+			logger.info("AskTOken: I have token and am not in CS so sending token to " +tokenRequestor);
 			token = false;
 			handlerQueue.add(new HandlerQueueObject("send", "receivetoken", timestamp, myNodeID , tokenRequestor));
 		}		
@@ -130,7 +140,7 @@ public class Functions
 			 
 			if(TokenRequestor == myNodeID)
 			{
-				System.out.println("RToken: I am the requestor for token, I enter my CS");
+				logger.info("RToken: I am the requestor for token, I enter my CS");
 				criticalSection = true;
 				token = true;
 				writer = new BufferedWriter( new FileWriter( myNodeID +".txt"));
@@ -143,16 +153,21 @@ public class Functions
 				{
 					e.printStackTrace();
 				}
-				System.out.println("RToken: I am done with my CS, calling release critical section");
+				logger.info("RToken: I am done with my CS, calling release critical section");
 				writer.write("Node " + myNodeID + " Exits;\n");
 				writer.close();
 				releaseCriticalSection();
 				
 				return;
 			}
+			else if(sender == TokenRequestor)
+			{
+				queue.poll();
+				TokenRequestor = queue.peek().getSender();
+			}
 			
 			token = false;
-			System.out.println("RToken: I am not the first token requestor, I pass it on to the token Reqestor " + TokenRequestor);
+			logger.info("RToken: I am not the first token requestor, I pass it on to the token Reqestor " + TokenRequestor);
 			handlerQueue.add(new HandlerQueueObject("send", "receivetoken", timestamp, myNodeID , TokenRequestor));
 				
 		}
@@ -167,14 +182,14 @@ public class Functions
 				queue.remove(q);
 		}
 
-		System.out.println("RRleaseMessage: I have release message from " + tokenHolder + " , I have maxxed my timestamp.");
+		logger.info("RRleaseMessage: I have release message from " + tokenHolder + " , I have maxxed my timestamp.");
 		
 		this.timestamp = Math.max(this.timestamp , timestampReceived);
 		TestClient.setTimestamp(this.timestamp);
 		
 		if(queue.size() > 0)
 		{
-			System.out.println("RRleaseMessage: My queue is not empty, so I ask " + tokenHolder + " to give me the token if it has it");
+			logger.info("RRleaseMessage: My queue is not empty, so I ask " + tokenHolder + " to give me the token if it has it");
 			QueueObject nextRequestorInQueue = queue.peek();						
 			handlerQueue.add(new HandlerQueueObject("send", "asktoken", timestamp, myNodeID , tokenHolder));				
 
@@ -190,17 +205,17 @@ public class Functions
 				queue.remove(q);
 		}
 		
-		criticalSection = false;	
 		
-		System.out.println("RCriticalSection: I dequeued myself, sending release messsages to all");
+		logger.info("RCriticalSection: I dequeued myself, sending release messsages to all");
 		for(int QuorumMember : quorum)
 		{
 			if(QuorumMember != myNodeID)
 			{
-				System.out.println("RCriticalSection: sending release to " + QuorumMember);
+				logger.info("RCriticalSection: sending release to " + QuorumMember);
 				handlerQueue.add(new HandlerQueueObject("send", "receiveReleaseMessage", timestamp, myNodeID , QuorumMember));
 			}
 		}
+		criticalSection = false;
 
 	}
 }

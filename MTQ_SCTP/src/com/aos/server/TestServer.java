@@ -5,6 +5,9 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.concurrent.PriorityBlockingQueue;
+import java.util.logging.FileHandler;
+import java.util.logging.Logger;
+import java.util.logging.SimpleFormatter;
 
 import com.aos.common.HandlerQueueObject;
 import com.aos.common.QueueObject;
@@ -20,6 +23,8 @@ public class TestServer implements Runnable
 	private PriorityBlockingQueue<HandlerQueueObject> handlerQueue;
 	private int[] quorum;
 	private Boolean token;
+	Logger logger = Logger.getLogger("MyServerLog"); 
+	FileHandler fh;
 	
 	public TestServer(int myNodeID,PriorityBlockingQueue<QueueObject> queue, PriorityBlockingQueue<HandlerQueueObject> handlerQueue,
 			int[] quorum, Boolean token) {
@@ -35,6 +40,11 @@ public class TestServer implements Runnable
 	{
 		try
 		{
+			fh = new FileHandler("MyServerLogFile"+ myNodeID +".log");
+			logger.addHandler(fh);
+		    SimpleFormatter formatter = new SimpleFormatter();  
+	        fh.setFormatter(formatter);
+	        logger.setUseParentHandlers(false);
 			ByteBuffer byteBuffer = ByteBuffer.allocate(MESSAGE_SIZE);
 			String message;
 			try
@@ -46,16 +56,20 @@ public class TestServer implements Runnable
 				while(true)
 				{
 					SctpChannel sctpChannel = sctpServerChannel.accept();
+					
 					MessageInfo messageInfo = sctpChannel.receive(byteBuffer,null,null);
-					//System.out.println(messageInfo);
+					//logger.info(messageInfo);
 					message = byteToString(byteBuffer);
 					byteBuffer.flip();
 					String[] splits = message.split(",");
-					System.out.println("Received and queued request : (execute,"+ splits[1] + "," + splits[2] +"," + splits[3]+ "," + splits[4] + ")");
-					//System.out.println(message);
-					HandlerQueueObject handlerQueueObject = new HandlerQueueObject("execute", splits[1].trim() , Integer.parseInt(splits[2].trim()), Integer.parseInt((splits[3].trim()).substring(0,1)),
-							Integer.parseInt((splits[4].trim()).substring(0,1)));
+					int messageLength = Integer.parseInt(splits[0]);
+					message = message.substring(3,messageLength+3);
+					splits = message.split(",");
+					logger.info("Received and queued request : (execute,"+ splits[1] + "," + splits[2] +"," + splits[3]+ "," + splits[4] + ")");
+					HandlerQueueObject handlerQueueObject = new HandlerQueueObject("execute", splits[1].trim() , Integer.parseInt(splits[2].trim()), Integer.parseInt((splits[3].trim())),
+							Integer.parseInt((splits[4].trim())));
 					handlerQueue.add(handlerQueueObject);
+					
 				}
 
 			}
@@ -67,8 +81,7 @@ public class TestServer implements Runnable
 		}
 		catch(Exception ex)
 		{
-			System.out.println("Error in server");
-			System.out.println(ex);
+			logger.info("Error in server");
 		}	
 	}
 	

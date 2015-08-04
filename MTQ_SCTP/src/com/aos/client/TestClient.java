@@ -8,6 +8,9 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Queue;
 import java.util.concurrent.PriorityBlockingQueue;
+import java.util.logging.FileHandler;
+import java.util.logging.Logger;
+import java.util.logging.SimpleFormatter;
 import java.io.*;
 import java.net.*;
 
@@ -32,6 +35,8 @@ public class TestClient implements Runnable
 	private static int timestamp = 0;
 	private PriorityBlockingQueue<Integer> requestTimestampQueue; 
 	
+	Logger logger = Logger.getLogger("MyClientLog"); 
+	FileHandler fh;  
 	public TestClient(int myNodeID,PriorityBlockingQueue<QueueObject> queue,PriorityBlockingQueue<HandlerQueueObject> handlerQueue,
 			int[] quorum,Boolean token,int requestTime) {
 		this.myNodeID = myNodeID;
@@ -55,12 +60,23 @@ public class TestClient implements Runnable
 	@Override
 	public void run() 
 	{
+		 try {
+			fh = new FileHandler("MyClientLogFile"+ myNodeID +".log");
+			} catch (SecurityException | IOException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}  
+	        logger.addHandler(fh);
+	        SimpleFormatter formatter = new SimpleFormatter();  
+	        fh.setFormatter(formatter);
+	        logger.setUseParentHandlers(false);
+	        
 		while (true) {		
 			if(!requestTimestampQueue.isEmpty() && requestTimestampQueue.peek() <= getTimeStamp())
 			{
 				requestTimestampQueue.poll();
 				HandlerQueueObject handlerQueueObject = new HandlerQueueObject("execute","sendrequest", requestTime-1, myNodeID, myNodeID);
-				System.out.println("Queued request : (execute,sendrequest," + (requestTime-1) +"," + myNodeID + "," + myNodeID + ")");
+				logger.info("Queued request : (execute,sendrequest," + (requestTime-1) +"," + myNodeID + "," + myNodeID + ")");
 				handlerQueue.add(handlerQueueObject);
 			}
 			try {
