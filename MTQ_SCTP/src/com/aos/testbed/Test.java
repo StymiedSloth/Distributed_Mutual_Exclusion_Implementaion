@@ -2,6 +2,9 @@ package com.aos.testbed;
 
 import java.io.IOException;
 import java.util.concurrent.PriorityBlockingQueue;
+import java.util.logging.FileHandler;
+import java.util.logging.Logger;
+import java.util.logging.SimpleFormatter;
 
 import com.aos.client.TestClient;
 import com.aos.common.HandlerQueueObject;
@@ -15,7 +18,8 @@ public class Test
 	private static int totalNumberOfNodes;
 	private static int requestTime;
 	private static Boolean Token;
-	
+	static Logger logger = Logger.getLogger("MyTestLog"); 
+	static FileHandler fh;  
 	public static void main(String args[])
 	{		
 		PriorityBlockingQueue<QueueObject> sharedQueue = new PriorityBlockingQueue<QueueObject>();
@@ -26,13 +30,27 @@ public class Test
 		requestTime = Integer.parseInt(args[2]);
 		Token = Boolean.parseBoolean(args[3]);
 		
+
+		try {
+			fh = new FileHandler("MyTestLogFile"+ myNodeId +".log");
+			} catch (SecurityException | IOException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}  
+	        logger.addHandler(fh);
+	        SimpleFormatter formatter = new SimpleFormatter();  
+	        fh.setFormatter(formatter);
+	        logger.setUseParentHandlers(false);
+		
+		
 		int[] myQuorum = findQuorum(myNodeId, totalNumberOfNodes);
+		String temp = "";
 		try {
 			System.out.println("Initiating Sequence with my quorum");
 			for (int i = 0; i < myQuorum.length; i++) {
-				System.out.print(myQuorum[i] + " ");
+				temp+= myQuorum[i] + " ";
 			}
-			System.out.println();
+			System.out.println(temp);
 			TestServer node1Server = new TestServer(myNodeId,sharedQueue,handlerQueue,myQuorum,Token);
 			TestClient node1Client = new TestClient(myNodeId,sharedQueue,handlerQueue,myQuorum,Token,requestTime);
 			Handler handler = new Handler(myNodeId, sharedQueue, handlerQueue, myQuorum, Token);
@@ -40,17 +58,17 @@ public class Test
 			handler.start();
 			node1Server.start();
 
-			Thread.sleep(5*1000);
+//			Thread.sleep(5*1000);
 			
 			node1Client.start();
-		} catch (InterruptedException | IOException e) {
+		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}
 	
-	private static int[] findQuorum(int myNodeId,int quorumSize)
+	private static int[] findQuorum(int myNodeId,int totalNumberOfNodes)
 	{
-		int matrixRowSize = (int) Math.ceil(Math.sqrt(quorumSize));
+		int matrixRowSize = (int) Math.ceil(Math.sqrt(totalNumberOfNodes));
 		
 		int[][] nodeGrid = new int[matrixRowSize][matrixRowSize];
 		
@@ -82,6 +100,8 @@ public class Test
 			j++;
 		}
 
+		
+		
 		return quorum;
 	}
 }

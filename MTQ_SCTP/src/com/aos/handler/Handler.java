@@ -51,7 +51,7 @@ public class Handler implements Runnable{
 					int timestamp = handlerQueueObject.getTimestamp(); 
 					int sender = handlerQueueObject.getSender();
 					int receiver = handlerQueueObject.getReceiver();
-					System.out.println("Handling Queued request : (" + whatToDo + ","+method + "," + timestamp +"," + sender + "," + receiver + ")");
+					System.out.println("Handler : (" + whatToDo + ","+method + "," + timestamp +"," + sender + "," + receiver + ")");
 					if(whatToDo.equals("send"))
 						sendMessage(whatToDo,method,timestamp,sender,receiver);
 					else

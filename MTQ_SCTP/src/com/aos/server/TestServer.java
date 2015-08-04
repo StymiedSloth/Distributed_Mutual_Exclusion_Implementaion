@@ -23,8 +23,6 @@ public class TestServer implements Runnable
 	private PriorityBlockingQueue<HandlerQueueObject> handlerQueue;
 	private int[] quorum;
 	private Boolean token;
-	Logger logger = Logger.getLogger("MyServerLog"); 
-	FileHandler fh;
 	
 	public TestServer(int myNodeID,PriorityBlockingQueue<QueueObject> queue, PriorityBlockingQueue<HandlerQueueObject> handlerQueue,
 			int[] quorum, Boolean token) {
@@ -40,11 +38,6 @@ public class TestServer implements Runnable
 	{
 		try
 		{
-			fh = new FileHandler("MyServerLogFile"+ myNodeID +".log");
-			logger.addHandler(fh);
-		    SimpleFormatter formatter = new SimpleFormatter();  
-	        fh.setFormatter(formatter);
-	        logger.setUseParentHandlers(false);
 			ByteBuffer byteBuffer = ByteBuffer.allocate(MESSAGE_SIZE);
 			String message;
 			try
@@ -58,14 +51,12 @@ public class TestServer implements Runnable
 					SctpChannel sctpChannel = sctpServerChannel.accept();
 					
 					MessageInfo messageInfo = sctpChannel.receive(byteBuffer,null,null);
-					//logger.info(messageInfo);
 					message = byteToString(byteBuffer);
 					byteBuffer.flip();
 					String[] splits = message.split(",");
 					int messageLength = Integer.parseInt(splits[0]);
 					message = message.substring(3,messageLength+3);
 					splits = message.split(",");
-					logger.info("Received and queued request : (execute,"+ splits[1] + "," + splits[2] +"," + splits[3]+ "," + splits[4] + ")");
 					HandlerQueueObject handlerQueueObject = new HandlerQueueObject("execute", splits[1].trim() , Integer.parseInt(splits[2].trim()), Integer.parseInt((splits[3].trim())),
 							Integer.parseInt((splits[4].trim())));
 					handlerQueue.add(handlerQueueObject);
@@ -81,7 +72,7 @@ public class TestServer implements Runnable
 		}
 		catch(Exception ex)
 		{
-			logger.info("Error in server");
+			System.out.println("Error in server");
 		}	
 	}
 	

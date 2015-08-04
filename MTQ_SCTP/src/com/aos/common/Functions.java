@@ -43,7 +43,6 @@ public class Functions
 
 	public void sendRequest(int receivedTimestamp, int sender) throws IOException
 	{
-		logger.info("Executing Send Request");
 		this.timestamp = receivedTimestamp + 1;
 		
 		QueueObject queueObject = new QueueObject(this.timestamp, myNodeID);
@@ -55,10 +54,11 @@ public class Functions
 		
 		if(obj.getSender() == myNodeID && token == true)
 		{
-			logger.info("I have token so I exnter Critical Section");
+			logger.info("SRequest: I have token so I enter Critical Section");
 			
 			writer = new BufferedWriter( new FileWriter( myNodeID +".txt"));
-			writer.write("\n" + new Timestamp(System.currentTimeMillis()) +
+			//new Timestamp(System.currentTimeMillis())
+			writer.write("\n" + this.timestamp +
 					"\nNode " + myNodeID + " Enters; ");
 			
 			criticalSection = true;
@@ -77,26 +77,29 @@ public class Functions
 					queue.remove(q);
 			}
 			criticalSection = false;
-			logger.info("Exit my Critical Section");
+			logger.info("SRequest: Exit my Critical Section");
 			
 			writer.write("Node " + myNodeID + " Exits;\n");
 			writer.close();
 			return;
 
 		}
+		
+		String temp = "";
 		for(int QuorumMember : quorum)
 		{
 			if(QuorumMember != myNodeID)
 			{
-				logger.info("Don't have token, sending request to my quorum member " + QuorumMember);
+				temp += QuorumMember + " , ";
 				handlerQueue.add(new HandlerQueueObject("send", "receiverequest", timestamp, sender, QuorumMember));
 			}
-		}		
+		}
+		logger.info("SRequest: Don't have token, sending request to my quorum members " + temp);
 	}
 	
 	public void receiveRequest(int timestamp, int sender)			
 	{
-		logger.info("RRequest: I have received a request from my quorum member " + sender);
+		logger.info("RRequest: From " + sender);
 		if(!queue.contains(new QueueObject(timestamp, sender)))
 			queue.add(new QueueObject(timestamp, sender));
 		
@@ -110,14 +113,17 @@ public class Functions
 		}
 		else if(!token)
 		{
-			logger.info("RRequest:I don't have token so I ask my Quorum members");
+			String temp = "";
+			
 			for(int QuorumMember : quorum)
 			{
 				if(QuorumMember != myNodeID && QuorumMember != sender)
 				{
+						temp += QuorumMember + " , ";
 						handlerQueue.add(new HandlerQueueObject("send", "asktoken", timestamp, myNodeID, QuorumMember));
 				}
 			}
+			logger.info("RRequest:I don't have token so I ask my Quorum members "+ temp);
 		}
 	}
 
@@ -134,17 +140,18 @@ public class Functions
 
 	public void receiveToken(int sender) throws IOException
 	{
+		token = true;
+		logger.info("RToken: From " + sender);
 		if(!queue.isEmpty())
 		{
 			int TokenRequestor = queue.peek().getSender() ;
 			 
 			if(TokenRequestor == myNodeID)
 			{
-				logger.info("RToken: I am the requestor for token, I enter my CS");
 				criticalSection = true;
-				token = true;
+				logger.info("RToken: I am the requestor for token, I enter my CS");
 				writer = new BufferedWriter( new FileWriter( myNodeID +".txt"));
-				writer.write("\n" +new Timestamp(System.currentTimeMillis()) +
+				writer.write("\n" + this.timestamp +
 						"\nNode " + myNodeID + " Enters; ");
 				try
 				{
@@ -176,21 +183,21 @@ public class Functions
 
 	public void receiveReleaseMessage(int timestampReceived, int tokenHolder)
 	{
+		String temp = "";
 		for(QueueObject q : queue)
 		{
 			if(q.getTimestamp()== timestampReceived && q.getSender()==tokenHolder)
 				queue.remove(q);
+			temp +="("+ q.getTimestamp() + " , " + q.getSender() + "),";
 		}
 
-		logger.info("RRleaseMessage: I have release message from " + tokenHolder + " , I have maxxed my timestamp.");
-		
 		this.timestamp = Math.max(this.timestamp , timestampReceived);
 		TestClient.setTimestamp(this.timestamp);
-		
+		logger.info("RRleaseMessage: Release got from " + tokenHolder + " , I have maxxed my timestamp to " + this.timestamp);
+				
 		if(queue.size() > 0)
 		{
-			logger.info("RRleaseMessage: My queue is not empty, so I ask " + tokenHolder + " to give me the token if it has it");
-			QueueObject nextRequestorInQueue = queue.peek();						
+			logger.info("RRleaseMessage: My queue " + temp + " is not empty, so I ask " + tokenHolder + " to give me the token if it has it");						
 			handlerQueue.add(new HandlerQueueObject("send", "asktoken", timestamp, myNodeID , tokenHolder));				
 
 		}
@@ -206,12 +213,12 @@ public class Functions
 		}
 		
 		
-		logger.info("RCriticalSection: I dequeued myself, sending release messsages to all");
+		logger.info("RCriticalSection: I dequeued myself, sending release messsages to ");
 		for(int QuorumMember : quorum)
 		{
 			if(QuorumMember != myNodeID)
 			{
-				logger.info("RCriticalSection: sending release to " + QuorumMember);
+				logger.info(QuorumMember + " , ");
 				handlerQueue.add(new HandlerQueueObject("send", "receiveReleaseMessage", timestamp, myNodeID , QuorumMember));
 			}
 		}

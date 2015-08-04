@@ -76,7 +76,7 @@ public class TestClient implements Runnable
 			{
 				requestTimestampQueue.poll();
 				HandlerQueueObject handlerQueueObject = new HandlerQueueObject("execute","sendrequest", requestTime-1, myNodeID, myNodeID);
-				logger.info("Queued request : (execute,sendrequest," + (requestTime-1) +"," + myNodeID + "," + myNodeID + ")");
+				//System.out.println("Queued request : (execute,sendrequest," + (requestTime-1) +"," + myNodeID + "," + myNodeID + ")");
 				handlerQueue.add(handlerQueueObject);
 			}
 			try {
