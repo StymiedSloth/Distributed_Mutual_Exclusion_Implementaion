@@ -23,6 +23,7 @@ public class TestBed {
 	// "javac -d MutEx_using_Token_and_Quorums/bin/ MutEx_using_Token_and_Quorums/src/com/*/*/*.java";
 	private final static String COMPILE_COMMAND = "javac -d MTQ_SCTP/bin/ MTQ_SCTP/src/com/*/*/*.java";
 	private final static String EXECUTE_COMMAND = "java -cp .:MTQ_SCTP/bin/ com.aos.testbed.Test";
+//	private final static String EXECUTE_COMMAND = "java -cp .:Maekawa_SCTP/bin/ com.aos.testbed.Test";
 	public final static int TOTAL_NUMBER_OF_NODES = 16;
 	private final static String SERVER_ADDRESS_PREFIX = "net";
 	private final static String SERVER_ADDRESS_SUFFIX = ".utdallas.edu";

@@ -78,6 +78,8 @@ public class Handler implements Runnable{
 			functions.receiveInquire(timestamp, sender);
 		else if(method.equals("receiveRelinquish"))
 			functions.receiveRelinquish(timestamp, sender);
+		else if(method.equals("receiveReleaseMessage"))
+			functions.receiveReleaseMessage(timestamp, sender);
 	}
 
 	public static final int MESSAGE_SIZE = 100;
@@ -91,11 +93,11 @@ public class Handler implements Runnable{
 		{
 			if(hasAddressAlreadyBeenCreated[receiver] == null)
 				hasAddressAlreadyBeenCreated[receiver] = false;
-			SocketAddress socketAddress = new InetSocketAddress("net"+ String.format("%02d",receiver) +".utdallas.edu",(6500 + Integer.parseInt(String.format("%02d",receiver))));
+			SocketAddress socketAddress = new InetSocketAddress("net"+ String.format("%02d",receiver) +".utdallas.edu",(6600 + Integer.parseInt(String.format("%02d",receiver))));
 			SctpChannel sctpChannel = SctpChannel.open();
 			if(!hasAddressAlreadyBeenCreated[receiver])
 			{
-				sctpChannel.bind(new InetSocketAddress(6500 + Integer.parseInt(String.format("%02d",receiver))));
+				sctpChannel.bind(new InetSocketAddress(6600 + Integer.parseInt(String.format("%02d",receiver))));
 				hasAddressAlreadyBeenCreated[receiver] = true;
 			}
 			sctpChannel.connect(socketAddress);

@@ -43,6 +43,7 @@ public class Functions
         logger.setUseParentHandlers(false);
         amILocked = false;
         lockedMembers = new ArrayList<QueueObject>();
+        inquiredMembers = new ArrayList<QueueObject>();
 	}
 
 	public void sendRequest(int receivedTimestamp, int sender) throws IOException
@@ -96,8 +97,8 @@ public class Functions
 				handlerQueue.add(new HandlerQueueObject("send", "receiveLocked", timestamp, myNodeID, sender));
 			}
 		}
-		if(!queue.contains(new QueueObject(timestamp, sender)))
-			queue.add(new QueueObject(timestamp, sender));
+		if(!queue.contains(new QueueObject(receivedTimestamp, sender)))
+			queue.add(new QueueObject(receivedTimestamp, sender));
 	}
 
 	
@@ -133,7 +134,7 @@ public class Functions
 				if(q.getTimestamp()== timestamp && q.getSender()== myNodeID)
 					queue.remove(q);
 			}
-			
+			criticalSection = false;
 			if(!queue.isEmpty())
 			{
 				queueObject = queue.peek();
@@ -156,12 +157,14 @@ public class Functions
 
 	public void receiveFailed(int receivedTimestamp,int sender)
 	{
+		logger.info("RInquire: Received Failed from " + sender);
 		for(QueueObject queueObject : inquiredMembers)
 			handlerQueue.add(new HandlerQueueObject("send", "receiveRelinquish", timestamp, myNodeID, queueObject.getSender()));
 	}
 	
 	public void receiveInquire(int timestamp,int sender)
 	{
+		logger.info("RInquire: Received inquire from " + sender);
 		QueueObject queueObject = new QueueObject(timestamp, sender);
 		inquiredMembers.add(queueObject);
 	}
@@ -169,32 +172,41 @@ public class Functions
 	
 	public void receiveRelinquish(int receivedTimestamp,int sender)
 	{
+		logger.info("RInquire: Received relinquish from " + sender);
 		QueueObject queueObject = queue.peek();
 		handlerQueue.add(new HandlerQueueObject("send", "receiveLocked", timestamp ,
 				myNodeID, queueObject.getSender()));
 	}
 
 
-	public void receiveReleaseMessage(int timestampReceived, int tokenHolder)
+	public void receiveReleaseMessage(int timestampReceived, int sender) throws IOException
 	{
 		String temp = "";
 		for(QueueObject q : queue)
 		{
-			if(q.getTimestamp()== timestampReceived && q.getSender()==tokenHolder)
+			if(q.getTimestamp()== timestampReceived && q.getSender()==sender)
 				queue.remove(q);
 			temp +="("+ q.getTimestamp() + " , " + q.getSender() + "),";
 		}
-
+		logger.info("RReleaseMessage: Queue is " + temp);
 		this.timestamp = Math.max(this.timestamp , timestampReceived);
 		TestClient.setTimestamp(this.timestamp);
-		logger.info("RRleaseMessage: Release got from " + tokenHolder + " , I have maxxed my timestamp to " + this.timestamp);
+		logger.info("RRleaseMessage: Release got from " + sender + " , I have maxxed my timestamp to " + this.timestamp);
 				
 		if(queue.size() > 0)
 		{
 			logger.info("RRleaseMessage: My queue " + temp + " is not empty, so I lock to next item");						
 			QueueObject queueObject = queue.peek();
-			handlerQueue.add(new HandlerQueueObject("send", "receiveLocked", timestamp, myNodeID, 
-						queueObject.getSender()));				
+			if(queueObject.getSender() == myNodeID)
+			{
+				amILocked = true;
+				receiveLocked(queueObject.getTimestamp(), queueObject.getSender());
+			}
+			else
+			{
+				handlerQueue.add(new HandlerQueueObject("send", "receiveLocked", timestamp, myNodeID, 
+					queueObject.getSender()));				
+			}
 
 		}
 	}
