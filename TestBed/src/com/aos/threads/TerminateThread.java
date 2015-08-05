@@ -3,7 +3,15 @@ package com.aos.threads;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Scanner;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 import com.jcraft.jsch.Channel;
 import com.jcraft.jsch.ChannelExec;
@@ -15,10 +23,11 @@ import com.utd.aos.TestBed;
 
 public class TerminateThread implements Runnable {
 	private Thread t;
+	private HashMap<Integer, ArrayList<String> > hashMap;
 	
 	public TerminateThread()
 	{
-
+		hashMap = new HashMap<Integer, ArrayList<String>>();
 	}
 	
 	@Override
@@ -29,6 +38,7 @@ public class TerminateThread implements Runnable {
 		{
 			if(s.next().equals("x"))
 				TestBed.stopExecution();
+			
 		}
 		s.close();
 		
@@ -66,9 +76,20 @@ public class TerminateThread implements Runnable {
 			InputStream in = sftpchannel.get("combined.txt");
 			BufferedReader br = new BufferedReader(new InputStreamReader(in));
 			String line;
+			int key = 1;
             while ((line = br.readLine()) != null || !channel.isClosed()) {
-                if (line != null) {
-                    System.out.println(line);
+                if (line != null && line.length() >= 1) {
+                	if(line.length() >= 1 && line.length() < 3 && !hashMap.containsKey(Integer.parseInt(line)))
+                	{
+                		key = Integer.parseInt(line);
+                		hashMap.put(Integer.parseInt(line), new ArrayList<String>());
+                	}
+                	else if(line.length() > 3)
+                	{
+                		ArrayList<String> arrayList = hashMap.get(key);
+                		arrayList.add(line);
+                	}
+            		
                 }
             }
 			in.close();
@@ -76,12 +97,22 @@ public class TerminateThread implements Runnable {
             channel.disconnect();
             sftpchannel.disconnect();
 			session.disconnect();
+			
+			SortedSet<Integer> keys = new TreeSet<Integer>(hashMap.keySet());
+			for (int mapKey : keys) { 
+				ArrayList<String> arrayList  = hashMap.get(mapKey);
+			    System.out.print("T" + String.format("%02d",mapKey) + ": ");
+			    for(String item: arrayList)
+			    	System.out.println(item);
+			}
+			
 		}
 		catch(Exception ex)
 		{
 			ex.printStackTrace();
 		}
 	}
+	
 	
 
 	public void start()
