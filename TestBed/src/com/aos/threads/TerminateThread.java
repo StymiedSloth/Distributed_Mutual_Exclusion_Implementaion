@@ -55,8 +55,8 @@ public class TerminateThread implements Runnable {
 				log_files += "MyFuncLogFile"+ i +".log ";
 		      }
 			JSch jsch=new JSch();    
-//			String[] cred = LoginView.getCredentials();
-			String[] cred = {"vdr140330","K@booki2013"};
+			String[] cred = LoginView.getCredentials();
+			
 			Session session = jsch.getSession(cred[0], "net01.utdallas.edu", 22);
 			
 			session.setConfig("StrictHostKeyChecking", "no");
