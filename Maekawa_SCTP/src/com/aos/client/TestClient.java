@@ -58,17 +58,17 @@ public class TestClient implements Runnable
 	@Override
 	public void run() 
 	{
-		 try {
-			fh = new FileHandler("MyClientLogFile"+ myNodeID +".log");
-			} catch (SecurityException | IOException e1) {
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
-			}  
-	        logger.addHandler(fh);
-	        SimpleFormatter formatter = new SimpleFormatter();  
-	        fh.setFormatter(formatter);
-	        logger.setUseParentHandlers(false);
-	        
+//		 try {
+//			fh = new FileHandler("MyClientLogFile"+ myNodeID +".log");
+//			} catch (SecurityException | IOException e1) {
+//				// TODO Auto-generated catch block
+//				e1.printStackTrace();
+//			}  
+//	        logger.addHandler(fh);
+//	        SimpleFormatter formatter = new SimpleFormatter();  
+//	        fh.setFormatter(formatter);
+//	        logger.setUseParentHandlers(false);
+//	        
 		while (true) {		
 			if(!requestTimestampQueue.isEmpty() && requestTimestampQueue.peek() <= getTimeStamp())
 			{

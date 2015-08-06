@@ -1,6 +1,9 @@
 package com.aos.handler;
 
 import java.util.concurrent.PriorityBlockingQueue;
+import java.util.logging.FileHandler;
+import java.util.logging.Logger;
+import java.util.logging.SimpleFormatter;
 import java.io.*;
 import java.net.*;
 
@@ -23,7 +26,8 @@ public class Handler implements Runnable{
 	private static int timestamp = 0;
 	private Functions functions;
 	private Boolean[] hasAddressAlreadyBeenCreated = new Boolean[20];
-	
+	Logger logger = Logger.getLogger("MyHandlerLog"); 
+	FileHandler fh;  
 	public Handler(int myNodeID,PriorityBlockingQueue<QueueObject> queue,PriorityBlockingQueue<HandlerQueueObject> handlerQueue,
 			int[] quorum) throws IOException {
 		this.myNodeID = myNodeID;
@@ -37,6 +41,17 @@ public class Handler implements Runnable{
 	@Override
 	public void run() 
 	{
+		 try {
+				fh = new FileHandler("MyHandlerLogFile"+ myNodeID +".log");
+				} catch (SecurityException | IOException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}  
+		        logger.addHandler(fh);
+		        SimpleFormatter formatter = new SimpleFormatter();  
+		        fh.setFormatter(formatter);
+		        logger.setUseParentHandlers(false);
+		        
 		while (true) {		
 			if(handlerQueue.size() > 0)
 			{
@@ -49,7 +64,7 @@ public class Handler implements Runnable{
 					int timestamp = handlerQueueObject.getTimestamp(); 
 					int sender = handlerQueueObject.getSender();
 					int receiver = handlerQueueObject.getReceiver();
-					System.out.println("Handler : (" + whatToDo + ","+method + "," + timestamp +"," + sender + "," + receiver + ")");
+					logger.info("Handler : (" + whatToDo + ","+method + "," + timestamp +"," + sender + "," + receiver + ")");
 					if(whatToDo.equals("send"))
 						sendMessage(whatToDo,method,timestamp,sender,receiver);
 					else

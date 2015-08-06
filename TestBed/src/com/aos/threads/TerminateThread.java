@@ -37,7 +37,10 @@ public class TerminateThread implements Runnable {
 		if(s.hasNext())
 		{
 			if(s.next().equals("x"))
+			{
+//				System.out.print("");
 				TestBed.stopExecution();
+			}
 			
 		}
 		s.close();
@@ -45,9 +48,11 @@ public class TerminateThread implements Runnable {
 		try
 		{
 			String files = "";
+			String log_files = "";
 			for(int i=1;i<= TestBed.TOTAL_NUMBER_OF_NODES;i++)
 		      {
-				files +=  i +".txt "; 
+				files +=  i +".txt ";
+				log_files += "MyFuncLogFile"+ i +".log ";
 		      }
 			JSch jsch=new JSch();    
 			String[] cred = LoginView.getCredentials();
@@ -61,7 +66,7 @@ public class TerminateThread implements Runnable {
 			
 			Channel channel=session.openChannel("exec");
 			
-			((ChannelExec)channel).setCommand("head -c -1 -q "  + files +"> combined.txt");
+			((ChannelExec)channel).setCommand("head -c -1 -q "  + files +"> combined.txt\nhead -c -1 -q "  + log_files +"> combined.log");
 			channel.setInputStream(null);
 			((ChannelExec) channel).setErrStream(System.err);
 			InputStream ins = channel.getInputStream();
@@ -94,9 +99,32 @@ public class TerminateThread implements Runnable {
             }
 			in.close();
             br.close();
+            
+            in = sftpchannel.get("combined.log");
+			br = new BufferedReader(new InputStreamReader(in));
+		
+			int[] nodeMessageCount = new int[TestBed.TOTAL_NUMBER_OF_NODES + 1];
+			
+            while ((line = br.readLine()) != null || !channel.isClosed()) {
+                if (line != null && line.contains("Message count")) {
+                	String splits[] = line.split(":");
+                	int nodeId = Integer.parseInt(splits[2]); 
+                	if(nodeMessageCount[nodeId] < Integer.parseInt(splits[3]))
+                		nodeMessageCount[nodeId] = Integer.parseInt(splits[3]);
+                }
+            }
+            System.out.println();
+			in.close();
+            br.close();
+            
             channel.disconnect();
             sftpchannel.disconnect();
 			session.disconnect();
+			
+			int totalCount = 0;
+            for(int count : nodeMessageCount)
+            	totalCount += count;
+            System.out.println("Total Number of Messages : " + totalCount);
 			
 			SortedSet<Integer> keys = new TreeSet<Integer>(hashMap.keySet());
 			for (int mapKey : keys) { 

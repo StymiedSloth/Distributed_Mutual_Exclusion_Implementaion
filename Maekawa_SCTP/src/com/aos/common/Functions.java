@@ -25,6 +25,8 @@ public class Functions
 	private ArrayList<QueueObject> lockedMembers;
 	private ArrayList<QueueObject> inquiredMembers;
 	private BufferedWriter writer;
+	public static int messagecount;
+	
 	Logger logger = Logger.getLogger("MyFuncLog"); 
 	FileHandler fh;
 	
@@ -65,10 +67,11 @@ public class Functions
 			if(QuorumMember != myNodeID)
 			{
 				temp += QuorumMember + " , ";
+				messagecount++;
 				handlerQueue.add(new HandlerQueueObject("send", "receiverequest", timestamp, sender, QuorumMember));
 			}
 		}
-		logger.info("SRequest: Sending request to my quorum members " + temp);
+		logger.info("Message count:"+ myNodeID +":" +messagecount +"\n SRequest: Sending request to my quorum members " + temp);
 	}
 	
 	
@@ -77,28 +80,49 @@ public class Functions
 		logger.info("RRequest: From " + sender);
 		if(!criticalSection)
 		{
+			logger.info("RRequest: Am I locked " + amILocked);
 			if(amILocked)
 			{
 				QueueObject currentHighestRequest = queue.peek();
 				if(receivedTimestamp < currentHighestRequest.getTimestamp() || 
 						(receivedTimestamp == currentHighestRequest.getTimestamp() &&  sender < currentHighestRequest.getSender()))
 				{
-					handlerQueue.add(new HandlerQueueObject("send", "receiveInquire", timestamp, myNodeID, 
+					logger.info("RRequest: I got the higher priority request from " + sender);
+					messagecount++;
+					if( currentHighestRequest.getSender() == myNodeID )
+					{
+						messagecount++;
+						logger.info("RRequest: I am the first one if my request queue, so I send locked to higher priority " + sender);
+						lockedMembers.remove(currentHighestRequest);
+						handlerQueue.add(new HandlerQueueObject("send", "receiveLocked", timestamp, myNodeID, sender));
+					}
+					else
+					{
+						logger.info("RRequest: I am locked by someone else, sending inquire to  " + currentHighestRequest.getSender());
+						handlerQueue.add(new HandlerQueueObject("send", "receiveInquire", timestamp, myNodeID, 
 							currentHighestRequest.getSender() ));
+					}
 				}
 				else
 				{
+					messagecount++;
+					logger.info("RRequest: Lower priority request got, sending failed to " + sender);
 					handlerQueue.add(new HandlerQueueObject("send", "receiveFailed", timestamp, myNodeID, sender));
 				}
 				
 			}
 			else
 			{
+				messagecount++;
+				amILocked = true;
+				logger.info("RRequest: Sending locked to " + sender);
 				handlerQueue.add(new HandlerQueueObject("send", "receiveLocked", timestamp, myNodeID, sender));
-			}
+			} 
 		}
 		if(!queue.contains(new QueueObject(receivedTimestamp, sender)))
 			queue.add(new QueueObject(receivedTimestamp, sender));
+		
+		logger.info("Message count:"+ myNodeID +":" +messagecount + "\n");
 	}
 
 	
@@ -137,6 +161,8 @@ public class Functions
 			criticalSection = false;
 			if(!queue.isEmpty())
 			{
+				messagecount++;
+				amILocked = true;
 				queueObject = queue.peek();
 				handlerQueue.add(new HandlerQueueObject("send", "receiveLocked", timestamp, myNodeID, 
 							queueObject.getSender()));
@@ -146,10 +172,11 @@ public class Functions
 			{
 				if(QuorumMember != myNodeID)
 				{
+					messagecount++;
 					handlerQueue.add(new HandlerQueueObject("send", "receiveReleaseMessage", timestamp, myNodeID, QuorumMember));
 				}
 			}
-			
+			logger.info("Message count:"+ myNodeID +":" +messagecount + "\n");
 		}
 	}
 	
@@ -159,7 +186,11 @@ public class Functions
 	{
 		logger.info("RInquire: Received Failed from " + sender);
 		for(QueueObject queueObject : inquiredMembers)
+		{
+			messagecount++;
 			handlerQueue.add(new HandlerQueueObject("send", "receiveRelinquish", timestamp, myNodeID, queueObject.getSender()));
+		}
+		logger.info("Message count:"+ myNodeID +":" +messagecount + "\n");
 	}
 	
 	public void receiveInquire(int timestamp,int sender)
@@ -173,9 +204,13 @@ public class Functions
 	public void receiveRelinquish(int receivedTimestamp,int sender)
 	{
 		logger.info("RInquire: Received relinquish from " + sender);
+		
+		messagecount++;
 		QueueObject queueObject = queue.peek();
 		handlerQueue.add(new HandlerQueueObject("send", "receiveLocked", timestamp ,
 				myNodeID, queueObject.getSender()));
+		
+		logger.info("Message count:"+ myNodeID +":" +messagecount + "\n");
 	}
 
 
@@ -204,11 +239,17 @@ public class Functions
 			}
 			else
 			{
+				messagecount++; 
+				amILocked = true;
 				handlerQueue.add(new HandlerQueueObject("send", "receiveLocked", timestamp, myNodeID, 
 					queueObject.getSender()));				
 			}
 
 		}
+		
+		amILocked = false;
+		
+		logger.info("Message count:"+ myNodeID +":" +messagecount + "\n");
 	}
 
 }

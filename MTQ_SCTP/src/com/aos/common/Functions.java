@@ -24,6 +24,7 @@ public class Functions
 	private BufferedWriter writer;
 	Logger logger = Logger.getLogger("MyFuncLog"); 
 	FileHandler fh;
+	public static int messagecount;
 	
 	public Functions(int myNodeID,PriorityBlockingQueue<QueueObject> queue,PriorityBlockingQueue<HandlerQueueObject> handlerQueue,
 			int[] quorum, Boolean token) throws IOException
@@ -39,6 +40,7 @@ public class Functions
 	    SimpleFormatter formatter = new SimpleFormatter();  
         fh.setFormatter(formatter);
         logger.setUseParentHandlers(false);
+        messagecount = 0;
 	}
 
 	public void sendRequest(int receivedTimestamp, int sender) throws IOException
@@ -91,10 +93,11 @@ public class Functions
 			if(QuorumMember != myNodeID)
 			{
 				temp += QuorumMember + " , ";
+				messagecount++;
 				handlerQueue.add(new HandlerQueueObject("send", "receiverequest", timestamp, sender, QuorumMember));
 			}
 		}
-		logger.info("SRequest: Don't have token, sending request to my quorum members " + temp);
+		logger.info("Message count:"+ myNodeID +":" +messagecount + "\n SRequest: Don't have token, sending request to my quorum members " + temp);
 	}
 	
 	public void receiveRequest(int timestamp, int sender)			
@@ -109,6 +112,7 @@ public class Functions
 			int TokenRequestor = queueObject.getSender();
 			logger.info("RRequest:I have token and am not in CS so sending token to " + TokenRequestor);
 			token = false;
+			messagecount++;
 			handlerQueue.add(new HandlerQueueObject("send", "receivetoken", timestamp, myNodeID, TokenRequestor));
 		}
 		else if(!token)
@@ -120,10 +124,11 @@ public class Functions
 				if(QuorumMember != myNodeID && QuorumMember != sender)
 				{
 						temp += QuorumMember + " , ";
+						messagecount++;
 						handlerQueue.add(new HandlerQueueObject("send", "asktoken", timestamp, myNodeID, QuorumMember));
 				}
 			}
-			logger.info("RRequest:I don't have token so I ask my Quorum members "+ temp);
+			logger.info("Message count:"+ myNodeID +":" +messagecount + "\n RRequest:I don't have token so I ask my Quorum members "+ temp);
 		}
 	}
 
@@ -131,7 +136,8 @@ public class Functions
 	{
 		if(token && !criticalSection)
 		{	
-			logger.info("AskTOken: I have token and am not in CS so sending token to " +tokenRequestor);
+			messagecount++;
+			logger.info("Message count:"+ myNodeID +":" + messagecount + "\nAskTOken: I have token and am not in CS so sending token to " +tokenRequestor);
 			token = false;
 			handlerQueue.add(new HandlerQueueObject("send", "receivetoken", timestamp, myNodeID , tokenRequestor));
 		}		
@@ -174,7 +180,8 @@ public class Functions
 			}
 			
 			token = false;
-			logger.info("RToken: I am not the first token requestor, I pass it on to the token Reqestor " + TokenRequestor);
+			messagecount++;
+			logger.info("Message count:"+ myNodeID +":" + messagecount + "\nRToken: I am not the first token requestor, I pass it on to the token Reqestor " + TokenRequestor);
 			handlerQueue.add(new HandlerQueueObject("send", "receivetoken", timestamp, myNodeID , TokenRequestor));
 				
 		}
@@ -197,7 +204,8 @@ public class Functions
 				
 		if(queue.size() > 0)
 		{
-			logger.info("RRleaseMessage: My queue " + temp + " is not empty, so I ask " + tokenHolder + " to give me the token if it has it");						
+			messagecount++;
+			logger.info("Message count:"+ myNodeID +":" + messagecount + "\n RRleaseMessage: My queue " + temp + " is not empty, so I ask " + tokenHolder + " to give me the token if it has it");						
 			handlerQueue.add(new HandlerQueueObject("send", "asktoken", timestamp, myNodeID , tokenHolder));				
 
 		}
@@ -213,11 +221,12 @@ public class Functions
 		}
 		
 		
-		logger.info("RCriticalSection: I dequeued myself, sending release messsages to ");
+		logger.info("Message count:"+ myNodeID +":" + (messagecount+ quorum.length - 1) + "\n RCriticalSection: I dequeued myself, sending release messsages to ");
 		for(int QuorumMember : quorum)
 		{
 			if(QuorumMember != myNodeID)
 			{
+				messagecount++;
 				logger.info(QuorumMember + " , ");
 				handlerQueue.add(new HandlerQueueObject("send", "receiveReleaseMessage", timestamp, myNodeID , QuorumMember));
 			}
